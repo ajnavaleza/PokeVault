@@ -1047,21 +1047,24 @@ app.get('/', (req, res) => {
 
 /* ==================== SERVER STARTUP ==================== */
 
-// Initialize server for both local development and Vercel deployment
-initializeServer().then(() => {
-    // Only start server if not in Vercel environment
-    if (!process.env.VERCEL) {
+// Initialize server immediately for Vercel, async for local development
+if (process.env.VERCEL) {
+    // In Vercel, initialize but don't wait
+    initializeServer().catch(error => {
+        console.error('Failed to initialize server:', error);
+    });
+} else {
+    // Local development - wait for initialization
+    initializeServer().then(() => {
         app.listen(PORT, () => {
             console.log(`🎴 PokeVault server running on http://localhost:${PORT}`);
             console.log('Pokemon card portfolio tracker is ready!');
         });
-    }
-}).catch(error => {
-    console.error('Failed to initialize server:', error);
-    if (!process.env.VERCEL) {
+    }).catch(error => {
+        console.error('Failed to initialize server:', error);
         process.exit(1);
-    }
-});
+    });
+}
 
 // Export for Vercel
 module.exports = app; 
