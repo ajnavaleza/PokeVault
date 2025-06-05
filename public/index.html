@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PokeVault - Pokemon Card Portfolio Tracker</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎴</text></svg>">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎴 PokeVault</h1>
+            <p>Track your Pokemon card collection and watch your portfolio grow!</p>
+        </div>
+
+        <div class="add-card-form">
+            <h3>Add New Card</h3>
+            
+            <!-- Card Search Section -->
+            <div class="card-search-container">
+                <input type="text" id="cardSearch" placeholder="🔍 Search for a Pokemon card (e.g., Charizard, Pikachu...)" autocomplete="off">
+                <div id="searchResults" class="search-results"></div>
+            </div>
+            
+            <div class="form-divider">
+                <br>
+                <span>OR enter details manually:</span>
+            </div>
+            
+            <div class="form-row">
+                <input type="text" id="cardName" placeholder="Card Name (e.g., Charizard)">
+                <select id="cardSet">
+                    <option value="">Loading sets...</option>
+                </select>
+                <div class="card-number-input">
+                    <input type="text" id="cardNumber" placeholder="Card # (e.g., 25/102)" maxlength="20">
+                    <small class="input-help">Examples: 25/102, TG20, SV001/SV198, V001</small>
+                </div>
+                <input type="number" id="quantity" placeholder="Qty" min="1" value="1">
+                <button onclick="addCard()">Add Card</button>
+            </div>
+            <div class="form-actions">
+                <button type="button" onclick="clearSearch()" class="clear-btn">Clear Form</button>
+            </div>
+            <div id="addCardStatus"></div>
+        </div>
+
+        <div class="portfolio">
+            <div class="portfolio-header">
+                <h2>Your Pokemon Card Portfolio</h2>
+                <div class="portfolio-stats">
+                    <div class="stat-card">
+                        <div class="stat-value" id="totalCards">0</div>
+                        <div>Total Cards</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="uniqueCards">0</div>
+                        <div>Unique Cards</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="totalValue">$0.00</div>
+                        <div>Portfolio Value</div>
+                    </div>
+                    <div class="stat-card">
+                        <button onclick="updateAllPrices()" id="updateBtn" class="update-prices-btn">
+                            🔄 Update Prices
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div id="cardsContainer" class="cards-grid">
+                <div class="empty-state">
+                    <h3>No cards in your portfolio yet</h3>
+                    <p>Add your first Pokemon card above to start tracking your collection!</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/app.js"></script>
+</body>
+</html> 
