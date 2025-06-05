@@ -1,8 +1,7 @@
 /**
  * PokeVault Backend API Server
- * Pokemon card portfolio tracker with price fetching and image integration
+ * Pokemon card portfolio tracker with Firebase authentication and Firestore database
  */
-
 
 const express = require('express');
 const cors = require('cors');
@@ -11,6 +10,34 @@ const fs = require('fs').promises;
 const path = require('path');
 const TCGdex = require('@tcgdex/sdk').default
 const { Query } = require('@tcgdex/sdk');
+
+// Firebase imports (with error handling for setup)
+let db = null;
+let authenticateToken = null;
+let optionalAuth = null;
+
+try {
+    const firebaseAdmin = require('./firebase-admin');
+    const authMiddleware = require('./auth-middleware');
+    
+    db = firebaseAdmin.db;
+    authenticateToken = authMiddleware.authenticateToken;
+    optionalAuth = authMiddleware.optionalAuth;
+    
+    console.log('✅ Firebase initialized successfully');
+} catch (error) {
+    console.warn('⚠️ Firebase not configured yet. Please follow FIREBASE_SETUP.md');
+    console.warn('Running in fallback mode with JSON file storage.');
+    
+    // Fallback middleware that always fails authentication
+    authenticateToken = (req, res, next) => {
+        res.status(503).json({ 
+            error: 'Firebase not configured. Please follow FIREBASE_SETUP.md' 
+        });
+    };
+    
+    optionalAuth = (req, res, next) => next();
+}
 
 /* ==================== SERVER CONFIGURATION ==================== */
 
@@ -24,7 +51,6 @@ const tcgdex = new TCGdex('en');
 
 // Global state
 let POKEMON_API_KEY = '';
-let portfolios = {};
 let setsData = [];
 
 // API rate limiting
@@ -46,21 +72,139 @@ app.use(express.static('public'));
 
 async function initializeServer() {
     await loadApiKey();
-    await loadPortfolios();
+    
+    // Load portfolios if Firebase is not available (fallback mode)
+    if (!db) {
+        await loadPortfolios();
+    }
+    
     await loadSetsCache();
 }
 
 async function loadApiKey() {
     try {
+        // Check environment variable first (for production deployment)
+        if (process.env.POKEMON_API_KEY) {
+            POKEMON_API_KEY = process.env.POKEMON_API_KEY.trim();
+            console.log('API key loaded from environment variable');
+            return;
+        }
+        
+        // Fall back to file (for local development)
         POKEMON_API_KEY = await fs.readFile('api.txt', 'utf8');
         POKEMON_API_KEY = POKEMON_API_KEY.trim();
-        console.log('API key loaded successfully');
+        console.log('API key loaded from file');
     } catch (error) {
         console.error('Error loading API key:', error.message);
+        console.warn('💡 For deployment, set POKEMON_API_KEY environment variable');
     }
 }
 
-/* ==================== DATA PERSISTENCE ==================== */
+/* ==================== FIREBASE PORTFOLIO FUNCTIONS ==================== */
+
+async function getUserPortfolio(userId) {
+    if (!db) {
+        // Fallback to JSON file system
+        return portfolios[userId] || [];
+    }
+    
+    try {
+        const portfolioRef = db.collection('portfolios').doc(userId);
+        const doc = await portfolioRef.get();
+        
+        if (!doc.exists) {
+            return [];
+        }
+        
+        const data = doc.data();
+        return data.cards || [];
+    } catch (error) {
+        console.error('Error getting portfolio:', error);
+        return [];
+    }
+}
+
+async function saveUserPortfolio(userId, portfolio) {
+    if (!db) {
+        // Fallback to JSON file system
+        portfolios[userId] = portfolio;
+        await savePortfolios();
+        return true;
+    }
+    
+    try {
+        const portfolioRef = db.collection('portfolios').doc(userId);
+        await portfolioRef.set({
+            cards: portfolio,
+            lastUpdated: new Date(),
+            userId: userId
+        });
+        return true;
+    } catch (error) {
+        console.error('Error saving portfolio:', error);
+        return false;
+    }
+}
+
+async function addCardToPortfolio(userId, card) {
+    try {
+        const portfolio = await getUserPortfolio(userId);
+        
+        // Improved duplicate checking - check multiple variations
+        const existingCard = portfolio.find(existingCard => {
+            const nameMatch = existingCard.name.toLowerCase().trim() === card.name.toLowerCase().trim();
+            const setMatch = existingCard.set === card.set;
+            
+            // Check both parsed number and display number
+            const numberMatch = (
+                existingCard.number === card.number ||
+                existingCard.displayNumber === card.displayNumber ||
+                existingCard.number === card.displayNumber ||
+                existingCard.displayNumber === card.number
+            );
+            
+            return nameMatch && setMatch && numberMatch;
+        });
+
+        if (existingCard) {
+            console.log(`🚫 Duplicate card detected: ${card.name} (${card.set}/${card.number}) already exists with ID ${existingCard.id}`);
+            throw new Error('This card is already in your portfolio');
+        }
+
+        console.log(`✅ Adding new card: ${card.name} (${card.set}/${card.number}) with ID ${card.id}`);
+        portfolio.push(card);
+        await saveUserPortfolio(userId, portfolio);
+        return card;
+    } catch (error) {
+        console.error('Error adding card to portfolio:', error);
+        throw error;
+    }
+}
+
+async function removeCardFromPortfolio(userId, cardId) {
+    try {
+        const portfolio = await getUserPortfolio(userId);
+        // Handle both string and numeric IDs for backward compatibility
+        const updatedPortfolio = portfolio.filter(card => 
+            card.id !== cardId && card.id != cardId && card.id !== parseInt(cardId)
+        );
+        
+        if (updatedPortfolio.length === portfolio.length) {
+            return false; // No card was removed
+        }
+        
+        await saveUserPortfolio(userId, updatedPortfolio);
+        return true;
+    } catch (error) {
+        console.error('Error removing card from portfolio:', error);
+        throw error;
+    }
+}
+
+/* ==================== DATA PERSISTENCE (LEGACY FALLBACK) ==================== */
+
+// Global state for fallback mode
+let portfolios = {};
 
 async function loadPortfolios() {
     try {
@@ -78,6 +222,8 @@ async function savePortfolios() {
         console.error('Error saving portfolios:', error.message);
     }
 }
+
+/* ==================== DATA PERSISTENCE (LEGACY - KEEPING FOR SETS CACHE) ==================== */
 
 async function loadSetsCache() {
     try {
@@ -296,12 +442,20 @@ async function fetchSets() {
 
     try {
         trackApiCall();
+        console.log('🔄 Fetching sets from Pokemon Price Tracker API...');
+        console.log('API URL:', `${API_BASE_URL}/sets`);
+        console.log('API Key status:', POKEMON_API_KEY ? 'Loaded' : 'NOT SET');
+        
         const response = await axios.get(`${API_BASE_URL}/sets`, {
             headers: {
                 'Authorization': `Bearer ${POKEMON_API_KEY}`,
                 'Content-Type': 'application/json'
             }
         });
+
+        console.log('✅ Sets API response status:', response.status);
+        console.log('📦 Sets API response data type:', typeof response.data);
+        console.log('📦 Sets API response data length/keys:', Array.isArray(response.data) ? response.data.length : Object.keys(response.data || {}));
 
         // Process API response
         let sets = [];
@@ -314,15 +468,21 @@ async function fetchSets() {
                 .filter(set => set && set.id && set.name)
                 .map(set => ({ id: set.id, name: set.name }));
         } else {
+            console.warn('⚠️ Unexpected API response format:', response.data);
             throw new Error('Unexpected API response format');
         }
 
+        console.log('🎯 Processed sets count:', sets.length);
         setsData = sets;
         await saveSetsCache();
         return setsData;
         
     } catch (error) {
-        console.error('Error fetching sets:', error.message);
+        console.error('❌ Error fetching sets:', error.message);
+        if (error.response) {
+            console.error('HTTP Status:', error.response.status);
+            console.error('Response data:', error.response.data);
+        }
         throw error;
     }
 }
@@ -524,16 +684,21 @@ function handlePriceError(res, queryParams) {
     });
 }
 
-// Portfolio management endpoints
-app.get('/api/portfolio/:userId', (req, res) => {
-    const userId = req.params.userId;
-    const portfolio = portfolios[userId] || [];
-    res.json(portfolio);
+// Portfolio management endpoints (with authentication)
+app.get('/api/portfolio', authenticateToken, async (req, res) => {
+    try {
+        const userId = req.user.uid;
+        const portfolio = await getUserPortfolio(userId);
+        res.json(portfolio);
+    } catch (error) {
+        console.error('Error getting portfolio:', error);
+        res.status(500).json({ error: 'Failed to get portfolio' });
+    }
 });
 
-app.post('/api/portfolio/:userId/add', async (req, res) => {
+app.post('/api/portfolio/add', authenticateToken, async (req, res) => {
     try {
-        const userId = req.params.userId;
+        const userId = req.user.uid;
         const { name, set, number, quantity, displayNumber, originalSetId } = req.body;
 
         if (!name || !set || !number || !quantity) {
@@ -545,12 +710,15 @@ app.post('/api/portfolio/:userId/add', async (req, res) => {
             params: { name, set, number }
         });
 
-        // Get image using original tcgdex set ID
+        // Get image using original tcgdx set ID
         const imageSetId = originalSetId || set;
         const imageUrl = await fetchCardImage(name, imageSetId, number);
 
+        // Generate a more robust unique ID
+        const cardId = Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+
         const card = {
-            id: Date.now(),
+            id: cardId,
             name,
             set,
             number,
@@ -562,43 +730,52 @@ app.post('/api/portfolio/:userId/add', async (req, res) => {
             lastUpdated: new Date().toISOString()
         };
 
-        if (!portfolios[userId]) {
-            portfolios[userId] = [];
+        try {
+            const addedCard = await addCardToPortfolio(userId, card);
+            res.json({ success: true, card: addedCard });
+        } catch (error) {
+            if (error.message === 'This card is already in your portfolio') {
+                return res.status(409).json({ error: error.message });
+            }
+            console.error('Error adding card to portfolio:', error);
+            res.status(500).json({ error: 'Failed to add card to portfolio' });
         }
-
-        portfolios[userId].push(card);
-        await savePortfolios();
-
-        res.json({ success: true, card });
     } catch (error) {
         console.error('Error adding card:', error.message);
         res.status(500).json({ error: 'Failed to add card' });
     }
 });
 
-app.delete('/api/portfolio/:userId/card/:cardId', async (req, res) => {
+app.delete('/api/portfolio/card/:cardId', authenticateToken, async (req, res) => {
     try {
-        const userId = req.params.userId;
-        const cardId = parseInt(req.params.cardId);
+        const userId = req.user.uid;
+        const cardId = req.params.cardId;
 
-        if (!portfolios[userId]) {
-            return res.status(404).json({ error: 'Portfolio not found' });
+        // Handle both string and numeric IDs for backward compatibility
+        const portfolio = await getUserPortfolio(userId);
+        const cardExists = portfolio.some(card => 
+            card.id === cardId || card.id == cardId || card.id === parseInt(cardId)
+        );
+
+        if (!cardExists) {
+            return res.status(404).json({ error: 'Card not found in portfolio' });
         }
 
-        portfolios[userId] = portfolios[userId].filter(card => card.id !== cardId);
-        await savePortfolios();
+        if (!await removeCardFromPortfolio(userId, cardId)) {
+            return res.status(404).json({ error: 'Card not found in portfolio' });
+        }
 
         res.json({ success: true });
     } catch (error) {
-        console.error('Error removing card:', error.message);
-        res.status(500).json({ error: 'Failed to remove card' });
+        console.error('Error removing card from portfolio:', error);
+        res.status(500).json({ error: 'Failed to remove card from portfolio' });
     }
 });
 
-app.put('/api/portfolio/:userId/update-prices', async (req, res) => {
+app.put('/api/portfolio/update-prices', authenticateToken, async (req, res) => {
     try {
-        const userId = req.params.userId;
-        const portfolio = portfolios[userId];
+        const userId = req.user.uid;
+        const portfolio = await getUserPortfolio(userId);
 
         if (!portfolio) {
             return res.status(404).json({ error: 'Portfolio not found' });
@@ -637,23 +814,68 @@ app.put('/api/portfolio/:userId/update-prices', async (req, res) => {
             }
         }
 
-        await savePortfolios();
-        
-        res.json({ 
-            success: true, 
-            portfolio,
-            message: `Updated ${updatedCount} cards, skipped ${skippedCount} cards`,
-            stats: {
-                updated: updatedCount,
-                skipped: skippedCount,
-                apiCallsToday: apiCallsToday,
-                dailyLimit: 200
-            }
-        });
+        try {
+            await saveUserPortfolio(userId, portfolio);
+            res.json({ 
+                success: true, 
+                portfolio,
+                message: `Updated ${updatedCount} cards, skipped ${skippedCount} cards`,
+                stats: {
+                    updated: updatedCount,
+                    skipped: skippedCount,
+                    apiCallsToday: apiCallsToday,
+                    dailyLimit: 200
+                }
+            });
+        } catch (error) {
+            console.error('Error saving portfolio:', error);
+            res.status(500).json({ error: 'Failed to save portfolio' });
+        }
     } catch (error) {
         console.error('Error updating prices:', error.message);
         res.status(500).json({ error: 'Failed to update prices' });
     }
+});
+
+app.put('/api/portfolio/update-quantity', authenticateToken, async (req, res) => {
+    try {
+        const userId = req.user.uid;
+        const { cardId, quantity } = req.body;
+
+        if (!cardId || !quantity || quantity < 1) {
+            return res.status(400).json({ error: 'Invalid card ID or quantity' });
+        }
+
+        const portfolio = await getUserPortfolio(userId);
+        const cardIndex = portfolio.findIndex(card => 
+            card.id === cardId || card.id == cardId || card.id === parseInt(cardId)
+        );
+
+        if (cardIndex === -1) {
+            return res.status(404).json({ error: 'Card not found in portfolio' });
+        }
+
+        portfolio[cardIndex].quantity = parseInt(quantity);
+        await saveUserPortfolio(userId, portfolio);
+
+        res.json({ 
+            success: true, 
+            card: portfolio[cardIndex],
+            message: `Quantity updated to ${quantity}`
+        });
+    } catch (error) {
+        console.error('Error updating card quantity:', error);
+        res.status(500).json({ error: 'Failed to update card quantity' });
+    }
+});
+
+// User profile endpoint
+app.get('/api/user/profile', authenticateToken, (req, res) => {
+    res.json({
+        uid: req.user.uid,
+        email: req.user.email,
+        name: req.user.name
+    });
 });
 
 // Stats and sets endpoints
@@ -681,10 +903,140 @@ app.get('/api/sets', async (req, res) => {
 
 function getFallbackSets() {
     return [
-        { id: 'base1', name: 'Base Set' }, { id: 'jungle', name: 'Jungle' },
-        { id: 'fossil', name: 'Fossil' }, { id: 'base2', name: 'Base Set 2' },
-        { id: 'swsh1', name: 'Sword & Shield' }, { id: 'swsh9', name: 'Brilliant Stars' },
-        { id: 'sv1', name: 'Scarlet & Violet Base Set' }, { id: 'sv4', name: 'Paradox Rift' }
+        // Base Era (1998-2000)
+        { id: 'base1', name: 'Base Set' },
+        { id: 'jungle', name: 'Jungle' },
+        { id: 'fossil', name: 'Fossil' },
+        { id: 'base2', name: 'Base Set 2' },
+        { id: 'tr', name: 'Team Rocket' },
+        { id: 'gym1', name: 'Gym Heroes' },
+        { id: 'gym2', name: 'Gym Challenge' },
+        
+        // Neo Era (2000-2001)
+        { id: 'neo1', name: 'Neo Genesis' },
+        { id: 'neo2', name: 'Neo Discovery' },
+        { id: 'neo3', name: 'Neo Revelation' },
+        { id: 'neo4', name: 'Neo Destiny' },
+        
+        // E-Card Era (2002-2003)
+        { id: 'ecard1', name: 'Expedition Base Set' },
+        { id: 'ecard2', name: 'Aquapolis' },
+        { id: 'ecard3', name: 'Skyridge' },
+        
+        // EX Era (2003-2007)
+        { id: 'ex1', name: 'Ruby & Sapphire' },
+        { id: 'ex2', name: 'Sandstorm' },
+        { id: 'ex3', name: 'Dragon' },
+        { id: 'ex4', name: 'Team Magma vs Team Aqua' },
+        { id: 'ex5', name: 'Hidden Legends' },
+        { id: 'ex6', name: 'FireRed & LeafGreen' },
+        { id: 'ex7', name: 'Team Rocket Returns' },
+        { id: 'ex8', name: 'Deoxys' },
+        { id: 'ex9', name: 'Emerald' },
+        { id: 'ex10', name: 'Unseen Forces' },
+        { id: 'ex11', name: 'Delta Species' },
+        { id: 'ex12', name: 'Legend Maker' },
+        { id: 'ex13', name: 'Holon Phantoms' },
+        { id: 'ex14', name: 'Crystal Guardians' },
+        { id: 'ex15', name: 'Dragon Frontiers' },
+        { id: 'ex16', name: 'Power Keepers' },
+        
+        // Diamond & Pearl Era (2007-2009)
+        { id: 'dp1', name: 'Diamond & Pearl' },
+        { id: 'dp2', name: 'Mysterious Treasures' },
+        { id: 'dp3', name: 'Secret Wonders' },
+        { id: 'dp4', name: 'Great Encounters' },
+        { id: 'dp5', name: 'Majestic Dawn' },
+        { id: 'dp6', name: 'Legends Awakened' },
+        { id: 'dp7', name: 'Stormfront' },
+        
+        // Platinum Era (2009-2010)
+        { id: 'pl1', name: 'Platinum' },
+        { id: 'pl2', name: 'Rising Rivals' },
+        { id: 'pl3', name: 'Supreme Victors' },
+        { id: 'pl4', name: 'Arceus' },
+        
+        // HeartGold & SoulSilver Era (2010-2011)
+        { id: 'hgss1', name: 'HeartGold & SoulSilver' },
+        { id: 'hgss2', name: 'Unleashed' },
+        { id: 'hgss3', name: 'Undaunted' },
+        { id: 'hgss4', name: 'Triumphant' },
+        
+        // Black & White Era (2011-2013)
+        { id: 'bw1', name: 'Black & White' },
+        { id: 'bw2', name: 'Emerging Powers' },
+        { id: 'bw3', name: 'Noble Victories' },
+        { id: 'bw4', name: 'Next Destinies' },
+        { id: 'bw5', name: 'Dark Explorers' },
+        { id: 'bw6', name: 'Dragons Exalted' },
+        { id: 'bw7', name: 'Dragon Vault' },
+        { id: 'bw8', name: 'Boundaries Crossed' },
+        { id: 'bw9', name: 'Plasma Storm' },
+        { id: 'bw10', name: 'Plasma Freeze' },
+        { id: 'bw11', name: 'Plasma Blast' },
+        { id: 'bw12', name: 'Legendary Treasures' },
+        
+        // XY Era (2014-2016)
+        { id: 'xy1', name: 'XY' },
+        { id: 'xy2', name: 'Flashfire' },
+        { id: 'xy3', name: 'Furious Fists' },
+        { id: 'xy4', name: 'Phantom Forces' },
+        { id: 'xy5', name: 'Primal Clash' },
+        { id: 'xy6', name: 'Roaring Skies' },
+        { id: 'xy7', name: 'Ancient Origins' },
+        { id: 'xy8', name: 'BREAKthrough' },
+        { id: 'xy9', name: 'BREAKpoint' },
+        { id: 'xy10', name: 'Fates Collide' },
+        { id: 'xy11', name: 'Steam Siege' },
+        { id: 'xy12', name: 'Evolutions' },
+        
+        // Sun & Moon Era (2017-2019)
+        { id: 'sm1', name: 'Sun & Moon' },
+        { id: 'sm2', name: 'Guardians Rising' },
+        { id: 'sm3', name: 'Burning Shadows' },
+        { id: 'sm35', name: 'Shining Legends' },
+        { id: 'sm4', name: 'Crimson Invasion' },
+        { id: 'sm5', name: 'Ultra Prism' },
+        { id: 'sm6', name: 'Forbidden Light' },
+        { id: 'sm7', name: 'Celestial Storm' },
+        { id: 'sm75', name: 'Dragon Majesty' },
+        { id: 'sm8', name: 'Lost Thunder' },
+        { id: 'sm9', name: 'Team Up' },
+        { id: 'det1', name: 'Detective Pikachu' },
+        { id: 'sm10', name: 'Unbroken Bonds' },
+        { id: 'sm11', name: 'Unified Minds' },
+        { id: 'sm115', name: 'Hidden Fates' },
+        { id: 'sm12', name: 'Cosmic Eclipse' },
+        
+        // Sword & Shield Era (2020-2022)
+        { id: 'swsh1', name: 'Sword & Shield' },
+        { id: 'swsh2', name: 'Rebel Clash' },
+        { id: 'swsh3', name: 'Darkness Ablaze' },
+        { id: 'swsh35', name: 'Champion\'s Path' },
+        { id: 'swsh4', name: 'Vivid Voltage' },
+        { id: 'swsh45', name: 'Shining Fates' },
+        { id: 'swsh5', name: 'Battle Styles' },
+        { id: 'swsh6', name: 'Chilling Reign' },
+        { id: 'swsh7', name: 'Evolving Skies' },
+        { id: 'swsh8', name: 'Fusion Strike' },
+        { id: 'swsh9', name: 'Brilliant Stars' },
+        { id: 'swsh10', name: 'Astral Radiance' },
+        { id: 'swsh11', name: 'Pokemon GO' },
+        { id: 'swsh12', name: 'Lost Origin' },
+        { id: 'swsh12pt5', name: 'Silver Tempest' },
+        
+        // Scarlet & Violet Era (2023-Present)
+        { id: 'sv1', name: 'Scarlet & Violet Base Set' },
+        { id: 'sv2', name: 'Paldea Evolved' },
+        { id: 'sv3', name: 'Obsidian Flames' },
+        { id: 'sv3pt5', name: '151' },
+        { id: 'sv4', name: 'Paradox Rift' },
+        { id: 'sv4pt5', name: 'Paldean Fates' },
+        { id: 'sv5', name: 'Temporal Forces' },
+        { id: 'sv6', name: 'Twilight Masquerade' },
+        { id: 'sv6pt5', name: 'Shrouded Fable' },
+        { id: 'sv7', name: 'Stellar Crown' },
+        { id: 'sv8', name: 'Surging Sparks' }
     ];
 }
 

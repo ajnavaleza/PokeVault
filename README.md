@@ -1,169 +1,128 @@
-# PokeVault 🎴
+# 🎴 PokeVault - Pokemon Card Portfolio Tracker
 
-A modern Pokemon card portfolio tracker with real-time price tracking, autocomplete search, and image integration.
+A modern web application for tracking your Pokemon card collection with real-time pricing, authentication, and beautiful UI.
 
-## Features
+## ✨ Features
 
-- **📋 Portfolio Management**: Add, remove, and organize your Pokemon card collection
-- **🔍 Smart Search**: Autocomplete search with card previews from 20,000+ cards
-- **💰 Real-time Pricing**: Automatic price fetching with highest-value selection from multiple sources
-- **🖼️ Card Images**: High-quality card images from TCGdx database
-- **📊 Portfolio Statistics**: Track total value, card counts, and collection insights
-- **⚡ Performance**: Intelligent caching and rate limiting for optimal performance
+- 🔍 **Card Search**: Autocomplete search with card images from TCGdx API
+- 💰 **Real-time Pricing**: Live price tracking from Pokemon Price Tracker API
+- 🔐 **Firebase Authentication**: Secure user accounts with Google/Email login
+- 📊 **Portfolio Management**: Add, remove, and track your card collection
+- 📱 **Responsive Design**: Works on desktop and mobile devices
+- 🎯 **Duplicate Prevention**: Smart duplicate detection with quantity management
+- 📈 **Collection Stats**: Total value, card count, and portfolio analytics
 
-## Tech Stack
+## 🚀 Running the Application
 
-- **Frontend**: Vanilla JavaScript, HTML5, CSS3
-- **Backend**: Node.js, Express.js
-- **APIs**: Pokemon Price Tracker API, TCGdex API
-- **Data**: JSON file storage with caching
+### Prerequisites
+- Node.js (v14 or higher)
+- npm
 
-## Project Structure
+### Local Development
 
-```
-PokeVault/
-├── public/
-│   ├── index.html          # Main application UI
-│   ├── style.css           # Application styling
-│   └── js/
-│       └── app.js          # Frontend JavaScript (cleaned & organized)
-├── server.js               # Backend API server (cleaned & organized)
-├── package.json            # Dependencies and scripts
-├── api.txt                 # Pokemon Price Tracker API key
-├── portfolios.json         # User portfolio data
-├── sets-cache.json         # Cached set data
-└── README.md              # This file
-```
-
-## Code Organization
-
-### Frontend (`public/js/app.js`)
-
-The frontend code is organized into logical sections:
-
-- **Global State**: Application variables and constants
-- **Application Initialization**: Startup logic and event listeners
-- **Card Search Functionality**: Autocomplete search with TCGdx integration
-- **Set ID Mapping**: Comprehensive mapping between TCGdx and API formats
-- **Card Management**: Add/remove/update card operations
-- **Card Number Processing**: Validation and parsing of Pokemon card formats
-- **Data Loading**: API communication and error handling
-- **UI Rendering**: Dynamic DOM manipulation and portfolio display
-- **Utility Functions**: Helper functions for formatting and data processing
-
-### Backend (`server.js`)
-
-The server code is structured for maintainability:
-
-- **Server Configuration**: Express setup and middleware
-- **Initialization**: Startup procedures and data loading
-- **Data Persistence**: File-based storage with JSON
-- **Rate Limiting & Caching**: API call management and response caching
-- **Image URL Processing**: TCGdx image URL construction
-- **Set ID Mapping**: Translation between different set naming conventions
-- **Card Image Fetching**: Integration with TCGdx for card images
-- **Sets Data Fetching**: Pokemon set information management
-- **API Routes**: RESTful endpoints for all operations
-
-## API Endpoints
-
-### Card Operations
-- `GET /api/cards/search?query={term}` - Search cards with autocomplete
-- `GET /api/card-price?name={name}&set={set}&number={number}` - Get card price
-
-### Portfolio Management
-- `GET /api/portfolio/{userId}` - Get user's portfolio
-- `POST /api/portfolio/{userId}/add` - Add card to portfolio
-- `DELETE /api/portfolio/{userId}/card/{cardId}` - Remove card
-- `PUT /api/portfolio/{userId}/update-prices` - Update all card prices
-
-### Utility
-- `GET /api/sets` - Get available Pokemon sets
-- `GET /api/stats` - Get API usage statistics
-
-## Installation & Setup
-
-1. **Clone the repository**
-   ```bash
-   git clone <repository-url>
-   cd PokeVault
-   ```
-
-2. **Install dependencies**
+1. **Install dependencies:**
    ```bash
    npm install
    ```
 
-3. **Add API key**
-   Create `api.txt` file with your Pokemon Price Tracker API key:
-   ```
-   your_api_key_here
-   ```
-
-4. **Start the server**
+2. **Start the application:**
    ```bash
    npm start
    ```
 
-5. **Open browser**
-   Navigate to `http://localhost:3000`
+3. **Open your browser:**
+   ```
+   http://localhost:3000
+   ```
 
-## Dependencies
+## 🚀 Deployment
 
-### Backend
-- `express` - Web framework
-- `cors` - Cross-origin resource sharing
-- `axios` - HTTP client for API requests
-- `@tcgdx/sdk` - TCGdx API integration
+The app supports both file-based configuration (for local development) and environment variables (for production deployment).
 
-### Frontend
-- Vanilla JavaScript (no external dependencies)
+### Environment Variables for Production
 
-## Features Deep Dive
+Set these environment variables on your hosting platform:
 
-### Smart Search System
-- **Debounced Input**: 300ms delay prevents excessive API calls
-- **Image Previews**: Low-resolution WebP images for fast loading
-- **Set Mapping**: Intelligent mapping between TCGdx and pricing API formats
-- **Fallback Handling**: Graceful degradation when images fail to load
+```bash
+# Pokemon Price Tracker API
+POKEMON_API_KEY=your_api_key
 
-### Price Management
-- **Multi-source Pricing**: Aggregates from eBay, TCGPlayer, and CardMarket
-- **Highest Value Selection**: Always displays the maximum available price
-- **Smart Caching**: 1-hour cache duration with rate limit protection
-- **Background Updates**: Batch price updates without blocking UI
+# Firebase Backend Configuration
+FIREBASE_PROJECT_ID=pokevault-fcd5b
+FIREBASE_PRIVATE_KEY_ID=your_private_key_id
+FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nyour_private_key\n-----END PRIVATE KEY-----"
+FIREBASE_CLIENT_EMAIL=your_client_email
+FIREBASE_CLIENT_ID=your_client_id
+FIREBASE_CLIENT_X509_CERT_URL=your_cert_url
 
-### Card Number Validation
-Supports all Pokemon card number formats:
-- Standard: `25/102`, `150/185`
-- Modern: `SV001/SV198`, `PAL001/PAL200`
-- Special: `TG20`, `V001`, `VMAX045`
-- Promo: `Promo-001`, `SWSH-123`
+# Firebase Frontend Configuration
+FIREBASE_API_KEY=your_frontend_api_key
+FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
+FIREBASE_STORAGE_BUCKET=your-project.firebasestorage.app
+FIREBASE_MESSAGING_SENDER_ID=your_sender_id
+FIREBASE_APP_ID=your_app_id
 
-### Image Integration
-- **High Quality**: 600x825px images for portfolio display
-- **Fast Thumbnails**: 245x337px WebP for search results
-- **Fallback System**: Graceful handling of missing images
-- **URL Construction**: Dynamic quality and format selection
+# Server Configuration
+PORT=3000
+NODE_ENV=production
+```
 
-### Supported Set Formats
-The application handles multiple set ID formats:
-- **Base Era**: base1, jungle, fossil, base2
-- **Modern Era**: swsh1-swsh12, sv1-sv9
-- **Special Sets**: Decimal formats (sv06.5 → sv6pt5)
+### Deployment Platforms
 
-## License
+**Heroku:**
+```bash
+heroku config:set POKEMON_API_KEY=your_key
+heroku config:set FIREBASE_PROJECT_ID=pokevault-fcd5b
+# ... set all other variables
+git push heroku main
+```
 
-This project is for educational and personal use. Please respect the terms of service for all integrated APIs.
+**Vercel:**
+```bash
+vercel env add POKEMON_API_KEY
+vercel env add FIREBASE_PROJECT_ID
+# ... add all other variables
+vercel deploy
+```
 
-## Contributing
+**Railway:**
+```bash
+railway variables set POKEMON_API_KEY=your_key
+# ... set all other variables
+railway up
+```
 
-1. Fork the repository
-2. Create a feature branch
-3. Follow the established code organization
-4. Test thoroughly with edge cases
-5. Submit a pull request
+## 📁 Project Structure
 
----
+```
+PokeVault/
+├── server.js                          # Express server & API routes
+├── firebase-admin.js                  # Firebase backend configuration
+├── auth-middleware.js                 # Authentication middleware
+├── public/
+│   ├── index.html                     # Main HTML file
+│   ├── firebase-config.js             # Firebase frontend config
+│   ├── js/
+│   │   ├── app.js                     # Main application logic
+│   │   └── auth.js                    # Authentication handling
+│   └── css/
+│       └── styles.css                 # Application styles
+├── api.txt                            # Pokemon API key (local dev)
+├── firebase-service-account.json      # Firebase credentials (local dev)
+└── package.json                       # Dependencies
+```
 
-**Built with ❤️ for Pokemon card collectors** 
+## 📊 API Endpoints
+
+- `GET /api/cards/search` - Search for Pokemon cards
+- `GET /api/card-price` - Get card pricing data
+- `GET /api/sets` - Get available Pokemon sets
+- `GET /api/portfolio` - Get user's portfolio (authenticated)
+- `POST /api/portfolio/add` - Add card to portfolio (authenticated)
+- `DELETE /api/portfolio/card/:id` - Remove card (authenticated)
+- `PUT /api/portfolio/update-prices` - Update all prices (authenticated)
+- `PUT /api/portfolio/update-quantity` - Update card quantity (authenticated)
+
+## 📝 License
+
+This project is licensed under the MIT License. 

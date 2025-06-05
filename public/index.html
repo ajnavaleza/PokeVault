@@ -6,12 +6,68 @@
     <title>PokeVault - Pokemon Card Portfolio Tracker</title>
     <link rel="stylesheet" href="css/styles.css">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎴</text></svg>">
+    
+    <!-- Firebase CDN -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 </head>
 <body>
-    <div class="container">
+    <!-- Authentication Container -->
+    <div id="auth-container" class="auth-container">
+        <div class="auth-wrapper">
+            <div class="auth-header">
+                <h1>🎴 PokeVault</h1>
+                <p>Your Pokemon card portfolio tracker</p>
+            </div>
+
+            <div class="auth-tabs">
+                <button class="auth-tab active" onclick="showLogin()">Login</button>
+                <button class="auth-tab" onclick="showRegister()">Register</button>
+            </div>
+
+            <!-- Login Form -->
+            <form id="login-form" class="auth-form">
+                <h3>Welcome Back!</h3>
+                <input type="email" id="login-email" placeholder="Email" required>
+                <input type="password" id="login-password" placeholder="Password" required>
+                <button type="submit" class="auth-btn">Login</button>
+            </form>
+
+            <!-- Register Form -->
+            <form id="register-form" class="auth-form" style="display: none;">
+                <h3>Create Account</h3>
+                <input type="email" id="register-email" placeholder="Email" required>
+                <input type="password" id="register-password" placeholder="Password (min 6 characters)" required minlength="6">
+                <button type="submit" class="auth-btn">Create Account</button>
+            </form>
+
+            <div class="auth-divider">
+                <span>OR</span>
+            </div>
+
+            <button id="google-signin-btn" class="google-signin-btn">
+                <svg width="18" height="18" viewBox="0 0 18 18">
+                    <path fill="#4285F4" d="M16.51 8H8.98v3h4.3c-.18 1-.74 1.48-1.6 2.04v2.01h2.6a7.8 7.8 0 0 0 2.38-5.88c0-.57-.05-.66-.15-1.18z"/>
+                    <path fill="#34A853" d="M8.98 17c2.16 0 3.97-.72 5.3-1.94l-2.6-2.04a4.8 4.8 0 0 1-7.18-2.53H1.83v2.07A8 8 0 0 0 8.98 17z"/>
+                    <path fill="#FBBC05" d="M4.5 10.49a4.8 4.8 0 0 1 0-3.07V5.35H1.83a8 8 0 0 0 0 7.22l2.67-2.08z"/>
+                    <path fill="#EA4335" d="M8.98 3.54c1.17 0 2.23.4 3.06 1.2l2.3-2.3A8 8 0 0 0 1.83 5.35L4.5 7.42a4.77 4.77 0 0 1 4.48-3.88z"/>
+                </svg>
+                Continue with Google
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Application Container -->
+    <div id="main-app" class="container" style="display: none;">
         <div class="header">
-            <h1>🎴 PokeVault</h1>
-            <p>Track your Pokemon card collection and watch your portfolio grow!</p>
+            <div class="header-content">
+                <div class="header-title">
+                    <h1>🎴 PokeVault</h1>
+                    <p>Track your Pokemon card collection and watch your portfolio grow!</p>
+                </div>
+                <div id="user-info" class="user-info"></div>
+            </div>
         </div>
 
         <div class="add-card-form">
@@ -28,18 +84,20 @@
                 <span>OR enter details manually:</span>
             </div>
             
-            <div class="form-row">
-                <input type="text" id="cardName" placeholder="Card Name (e.g., Charizard)">
-                <select id="cardSet">
-                    <option value="">Loading sets...</option>
-                </select>
-                <div class="card-number-input">
-                    <input type="text" id="cardNumber" placeholder="Card # (e.g., 25/102)" maxlength="20">
-                    <small class="input-help">Examples: 25/102, TG20, SV001/SV198, V001</small>
+            <form id="addCardForm">
+                <div class="form-row">
+                    <input type="text" id="cardName" placeholder="Card Name (e.g., Charizard)" required>
+                    <select id="cardSet" required>
+                        <option value="">Loading sets...</option>
+                    </select>
+                    <div class="card-number-input">
+                        <input type="text" id="cardNumber" placeholder="Card # (e.g., 25/102)" maxlength="20" required>
+                        <small class="input-help">Examples: 25/102, TG20, SV001/SV198, V001</small>
+                    </div>
+                    <input type="number" id="quantity" placeholder="Qty" min="1" value="1" required>
+                    <button type="submit">Add Card</button>
                 </div>
-                <input type="number" id="quantity" placeholder="Qty" min="1" value="1">
-                <button onclick="addCard()">Add Card</button>
-            </div>
+            </form>
             <div class="form-actions">
                 <button type="button" onclick="clearSearch()" class="clear-btn">Clear Form</button>
             </div>
@@ -78,6 +136,38 @@
         </div>
     </div>
 
+    <!-- Image Modal -->
+    <div id="imageModal" class="image-modal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeImageModal()">&times;</button>
+            <img id="modalImage" class="modal-image" src="" alt="">
+            <div id="modalInfo" class="modal-info">
+                <h3 id="modalTitle"></h3>
+                <p id="modalDetails"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase and App Scripts -->
+    <script src="firebase-config.js"></script>
+    <script src="js/auth.js"></script>
     <script src="js/app.js"></script>
+    
+    <script>
+        // Authentication tab switching
+        function showLogin() {
+            document.getElementById('login-form').style.display = 'block';
+            document.getElementById('register-form').style.display = 'none';
+            document.querySelectorAll('.auth-tab').forEach(tab => tab.classList.remove('active'));
+            event.target.classList.add('active');
+        }
+
+        function showRegister() {
+            document.getElementById('login-form').style.display = 'none';
+            document.getElementById('register-form').style.display = 'block';
+            document.querySelectorAll('.auth-tab').forEach(tab => tab.classList.remove('active'));
+            event.target.classList.add('active');
+        }
+    </script>
 </body>
 </html> 

@@ -1,20 +1,41 @@
 /**
  * PokeVault Frontend Application
- * Pokemon card portfolio tracker with autocomplete search and price tracking
+ * Pokemon card portfolio tracker with Firebase authentication and price tracking
  */
 
 /* ==================== GLOBAL STATE ==================== */
 
 let portfolio = [];
-const USER_ID = 'user1'; // In production, this would come from authentication
 let apiStats = {};
 let availableSets = [];
 let searchTimeout = null;
+let isSubmitting = false; // Prevent rapid-fire submissions
 
 /* ==================== APPLICATION INITIALIZATION ==================== */
 
 document.addEventListener('DOMContentLoaded', function() {
-    initializeApp();
+    // Wait for authManager to be available
+    if (typeof authManager === 'undefined') {
+        setTimeout(() => {
+            document.dispatchEvent(new Event('DOMContentLoaded'));
+        }, 100);
+        return;
+    }
+    
+    // Initialize authentication UI first
+    authManager.initAuthUI();
+    
+    // Listen for authentication state changes
+    authManager.onAuthStateChange((user, token) => {
+        if (user) {
+            // User is authenticated, initialize the app
+            initializeApp();
+        } else {
+            // User is not authenticated, clear any cached data
+            portfolio = [];
+            renderPortfolio();
+        }
+    });
 });
 
 async function initializeApp() {
@@ -28,6 +49,7 @@ async function initializeApp() {
         
         // Auto-refresh stats every 30 seconds
         setInterval(loadApiStats, 30000);
+        
     } catch (error) {
         console.error('Error initializing app:', error);
         showStatus('addCardStatus', 'Error loading application', 'error');
@@ -36,7 +58,53 @@ async function initializeApp() {
 
 function setupEventListeners() {
     setupCardSearch();
-    // Additional event listeners would go here
+    setupFormSubmission();
+}
+
+function setupFormSubmission() {
+    const addCardForm = document.getElementById('addCardForm');
+    if (addCardForm) {
+        addCardForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await addCard();
+        });
+    }
+}
+
+/* ==================== AUTHENTICATION HELPERS ==================== */
+
+async function getAuthHeaders() {
+    const token = await authManager.getAuthToken();
+    return token ? { 'Authorization': `Bearer ${token}` } : {};
+}
+
+async function makeAuthenticatedRequest(url, options = {}) {
+    const authHeaders = await getAuthHeaders();
+    
+    const requestOptions = {
+        ...options,
+        headers: {
+            'Content-Type': 'application/json',
+            ...authHeaders,
+            ...options.headers
+        }
+    };
+    
+    const response = await fetch(url, requestOptions);
+    
+    if (response.status === 401) {
+        // Token expired or invalid, redirect to login
+        authManager.showUnauthenticatedUI();
+        throw new Error('Authentication required');
+    }
+    
+    if (response.status === 503) {
+        // Firebase not configured, handle gracefully
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Service unavailable - Firebase not configured');
+    }
+    
+    return response;
 }
 
 /* ==================== CARD SEARCH FUNCTIONALITY ==================== */
@@ -149,8 +217,7 @@ function trySelectSet(setId, setName) {
     // Method 3: Try name similarity
     if (tryNameSimilarityMatch(setSelect, setName)) return true;
     
-    // No match found - log and clear selection
-    console.warn(`Could not find set "${setId}" (${setName}) in dropdown`);
+    // No match found - clear selection
     setSelect.value = '';
     return false;
 }
@@ -159,7 +226,6 @@ function tryExactSetMatch(setSelect, setId) {
     for (let option of setSelect.options) {
         if (option.value === setId) {
             setSelect.value = setId;
-            console.log(`Found exact set match: ${setId}`);
             return true;
         }
     }
@@ -173,7 +239,6 @@ function tryMappedSetMatch(setSelect, setId) {
     for (let option of setSelect.options) {
         if (option.value === mappedSetId) {
             setSelect.value = mappedSetId;
-            console.log(`Found mapped set match: ${setId} -> ${mappedSetId}`);
             return true;
         }
     }
@@ -189,7 +254,6 @@ function tryNameSimilarityMatch(setSelect, setName) {
         
         if (optionName.includes(searchName) || searchName.includes(optionName)) {
             setSelect.value = option.value;
-            console.log(`Found set by name similarity: "${setName}" -> "${option.textContent}"`);
             return true;
         }
     }
@@ -267,17 +331,109 @@ function mapTCGdxToApiSetId(tcgdxSetId) {
 /* ==================== CARD MANAGEMENT ==================== */
 
 async function addCard() {
+    if (!authManager.isAuthenticated()) {
+        showStatus('addCardStatus', 'Please log in to add cards', 'error');
+        return;
+    }
+
+    // Prevent rapid-fire submissions
+    if (isSubmitting) {
+        showStatus('addCardStatus', 'Please wait, processing previous request...', 'error');
+        return;
+    }
+
     const cardData = getFormData();
     if (!validateFormData(cardData)) return;
 
-    const originalSetId = document.getElementById('cardName').getAttribute('data-original-set');
+    // Set submission flag
+    isSubmitting = true;
+
+    // Disable form immediately to prevent multiple submissions
+    const addButton = document.querySelector('#addCardForm button[type="submit"]');
+    const formElements = document.querySelectorAll('#addCardForm input, #addCardForm select, #addCardForm button');
     
-    showStatus('addCardStatus', 'Adding card and fetching price...', 'loading');
+    formElements.forEach(el => el.disabled = true);
+    addButton.textContent = 'Checking...';
 
     try {
-        const response = await fetch(`/api/portfolio/${USER_ID}/add`, {
+        // Refresh portfolio first to ensure we have the latest data
+        await loadPortfolio();
+
+        // Improved duplicate checking - check multiple variations
+        const existingCard = portfolio.find(card => {
+            const nameMatch = card.name.toLowerCase().trim() === cardData.name.toLowerCase().trim();
+            const setMatch = card.set === cardData.set;
+            
+            // Check both parsed number and display number
+            const numberMatch = (
+                card.number === cardData.number ||
+                card.displayNumber === cardData.displayNumber ||
+                card.number === cardData.displayNumber ||
+                card.displayNumber === cardData.number
+            );
+            
+            return nameMatch && setMatch && numberMatch;
+        });
+
+        if (existingCard) {
+            // Re-enable form for the dialog
+            formElements.forEach(el => el.disabled = false);
+            addButton.textContent = 'Add Card';
+
+            const shouldIncreaseQuantity = confirm(
+                `${cardData.name} is already in your portfolio (Quantity: ${existingCard.quantity}). \n\n` +
+                `Would you like to increase its quantity by ${cardData.quantity} instead of adding a duplicate?`
+            );
+            
+            if (shouldIncreaseQuantity) {
+                // Disable form again for the update
+                formElements.forEach(el => el.disabled = true);
+                addButton.textContent = 'Updating...';
+
+                try {
+                    const newQuantity = existingCard.quantity + cardData.quantity;
+                    
+                    const response = await makeAuthenticatedRequest('/api/portfolio/update-quantity', {
+                        method: 'PUT',
+                        body: JSON.stringify({
+                            cardId: existingCard.id,
+                            quantity: newQuantity
+                        })
+                    });
+
+                    if (response.ok) {
+                        // Update local portfolio
+                        existingCard.quantity = newQuantity;
+                        renderPortfolio();
+                        updateStats();
+                        clearForm();
+                        showStatus('addCardStatus', `Updated ${cardData.name} quantity to ${newQuantity}!`, 'success');
+                    } else {
+                        const errorData = await response.json();
+                        throw new Error(errorData.error || 'Failed to update quantity');
+                    }
+                } catch (error) {
+                    console.error('Error updating quantity:', error);
+                    showStatus('addCardStatus', `Error updating quantity: ${error.message}`, 'error');
+                } finally {
+                    formElements.forEach(el => el.disabled = false);
+                    addButton.textContent = 'Add Card';
+                }
+                return;
+            } else {
+                showStatus('addCardStatus', 'Card not added - already exists in portfolio', 'error');
+                return;
+            }
+        }
+
+        // No duplicate found, proceed with adding
+        addButton.textContent = 'Adding...';
+        const originalSetId = document.getElementById('cardName').getAttribute('data-original-set');
+        
+        showStatus('addCardStatus', 'Adding card and fetching price...', 'loading');
+
+        const response = await makeAuthenticatedRequest('/api/portfolio/add', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 ...cardData,
                 originalSetId: originalSetId || cardData.set
@@ -285,17 +441,45 @@ async function addCard() {
         });
 
         const data = await response.json();
-        if (!response.ok) throw new Error(data.error);
+        if (!response.ok) {
+            if (response.status === 409) {
+                // Backend detected duplicate
+                showStatus('addCardStatus', 'This card is already in your portfolio', 'error');
+                // Refresh portfolio to sync
+                await loadPortfolio();
+                return;
+            }
+            throw new Error(data.error);
+        }
 
+        // Add to local portfolio and update UI
         portfolio.push(data.card);
         renderPortfolio();
+        updateStats();
         clearForm();
+        
+        // Refresh portfolio to ensure sync with backend
+        await loadPortfolio();
+        
         showStatus('addCardStatus', `${cardData.name} added successfully!`, 'success');
         loadApiStats();
 
     } catch (error) {
         console.error('Error adding card:', error);
-        showStatus('addCardStatus', `Error adding card: ${error.message}`, 'error');
+        
+        // Handle Firebase not configured case
+        if (error.message.includes('Firebase not configured')) {
+            showStatus('addCardStatus', 
+                'Firebase authentication is not configured. Please follow FIREBASE_SETUP.md to enable user accounts and portfolio management.', 
+                'error'
+            );
+        } else {
+            showStatus('addCardStatus', `Error adding card: ${error.message}`, 'error');
+        }
+    } finally {
+        // Re-enable form
+        formElements.forEach(el => el.disabled = false);
+        addButton.textContent = 'Add Card';
     }
 }
 
@@ -325,8 +509,17 @@ function validateFormData(data) {
 }
 
 async function removeCard(cardId) {
+    if (!authManager.isAuthenticated()) {
+        showStatus('addCardStatus', 'Please log in to remove cards', 'error');
+        return;
+    }
+
+    if (!confirm('Are you sure you want to remove this card?')) {
+        return;
+    }
+
     try {
-        const response = await fetch(`/api/portfolio/${USER_ID}/card/${cardId}`, {
+        const response = await makeAuthenticatedRequest(`/api/portfolio/card/${cardId}`, {
             method: 'DELETE'
         });
 
@@ -337,14 +530,29 @@ async function removeCard(cardId) {
 
         portfolio = portfolio.filter(card => card.id !== cardId);
         renderPortfolio();
+        updateStats();
 
     } catch (error) {
         console.error('Error removing card:', error);
-        showStatus('addCardStatus', `Error removing card: ${error.message}`, 'error');
+        
+        // Handle Firebase not configured case
+        if (error.message.includes('Firebase not configured')) {
+            showStatus('addCardStatus', 
+                'Firebase authentication is not configured. Portfolio management requires Firebase setup.', 
+                'error'
+            );
+        } else {
+            showStatus('addCardStatus', `Error removing card: ${error.message}`, 'error');
+        }
     }
 }
 
 async function updateAllPrices() {
+    if (!authManager.isAuthenticated()) {
+        showStatus('addCardStatus', 'Please log in to update prices', 'error');
+        return;
+    }
+
     const updateBtn = document.getElementById('updateBtn');
     const originalText = updateBtn.innerHTML;
     
@@ -354,7 +562,7 @@ async function updateAllPrices() {
     document.querySelectorAll('.card-item').forEach(item => item.classList.add('updating'));
 
     try {
-        const response = await fetch(`/api/portfolio/${USER_ID}/update-prices`, {
+        const response = await makeAuthenticatedRequest('/api/portfolio/update-prices', {
             method: 'PUT'
         });
 
@@ -363,12 +571,22 @@ async function updateAllPrices() {
 
         portfolio = data.portfolio;
         renderPortfolio();
+        updateStats();
         showStatus('addCardStatus', data.message || 'Prices updated successfully!', 'success');
         loadApiStats();
 
     } catch (error) {
         console.error('Error updating prices:', error);
-        showStatus('addCardStatus', `Error updating prices: ${error.message}`, 'error');
+        
+        // Handle Firebase not configured case
+        if (error.message.includes('Firebase not configured')) {
+            showStatus('addCardStatus', 
+                'Firebase authentication is not configured. Portfolio management requires Firebase setup.', 
+                'error'
+            );
+        } else {
+            showStatus('addCardStatus', `Error updating prices: ${error.message}`, 'error');
+        }
     } finally {
         updateBtn.innerHTML = originalText;
         updateBtn.disabled = false;
@@ -417,13 +635,23 @@ function validateCardNumber(input) {
 /* ==================== DATA LOADING ==================== */
 
 async function loadPortfolio() {
+    if (!authManager.isAuthenticated()) {
+        portfolio = [];
+        renderPortfolio();
+        updateStats();
+        return;
+    }
+
     try {
-        const response = await fetch(`/api/portfolio/${USER_ID}`);
+        const response = await makeAuthenticatedRequest('/api/portfolio');
         portfolio = await response.json();
         renderPortfolio();
+        updateStats();
     } catch (error) {
         console.error('Error loading portfolio:', error);
-        showStatus('addCardStatus', 'Error loading portfolio', 'error');
+        portfolio = [];
+        renderPortfolio();
+        updateStats();
     }
 }
 
@@ -433,7 +661,6 @@ async function loadSets() {
         if (!response.ok) throw new Error(`API returned status ${response.status}`);
         
         availableSets = await response.json();
-        console.log(`Loaded ${availableSets.length} sets from API`);
         populateSetsDropdown();
     } catch (error) {
         console.error('Error loading sets:', error);
@@ -501,7 +728,7 @@ function renderPortfolio() {
 
 function createCardHTML(card) {
     const imageHTML = card.imageUrl 
-        ? `<div class="card-image">
+        ? `<div class="card-image" onclick="openImageModal('${card.imageUrl}', '${card.name.replace(/'/g, "\\'")}', '${getSetDisplayName(card.set)} #${card.displayNumber || card.number}')">
              <img src="${card.imageUrl}" alt="${card.name}" onerror="this.parentElement.style.display='none'">
            </div>`
         : `<div class="card-image-placeholder">
@@ -588,4 +815,57 @@ function showStatus(elementId, message, type) {
     if (type === 'success' || type === 'error') {
         setTimeout(() => element.innerHTML = '', 7000);
     }
-} 
+}
+
+/* ==================== IMAGE MODAL FUNCTIONS ==================== */
+
+function openImageModal(imageUrl, cardName, cardDetails) {
+    const modal = document.getElementById('imageModal');
+    const modalImage = document.getElementById('modalImage');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalDetailsEl = document.getElementById('modalDetails');
+    
+    // Set image and info
+    modalImage.src = imageUrl;
+    modalImage.alt = cardName;
+    modalTitle.textContent = cardName;
+    modalDetailsEl.textContent = cardDetails;
+    
+    // Show modal
+    modal.classList.add('show');
+    
+    // Prevent body scrolling when modal is open
+    document.body.style.overflow = 'hidden';
+    
+    // Close modal when clicking outside the image
+    modal.onclick = function(e) {
+        if (e.target === modal) {
+            closeImageModal();
+        }
+    };
+    
+    // Close modal with Escape key
+    document.addEventListener('keydown', handleModalKeydown);
+}
+
+function closeImageModal() {
+    const modal = document.getElementById('imageModal');
+    modal.classList.remove('show');
+    
+    // Restore body scrolling
+    document.body.style.overflow = '';
+    
+    // Remove event listeners
+    modal.onclick = null;
+    document.removeEventListener('keydown', handleModalKeydown);
+}
+
+function handleModalKeydown(e) {
+    if (e.key === 'Escape') {
+        closeImageModal();
+    }
+}
+
+// Make functions globally available
+window.openImageModal = openImageModal;
+window.closeImageModal = closeImageModal; 
