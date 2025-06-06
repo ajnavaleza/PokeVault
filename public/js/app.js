@@ -343,7 +343,10 @@ async function addCard() {
     }
 
     const cardData = getFormData();
-    if (!validateFormData(cardData)) return;
+    if (!validateFormData(cardData)) {
+        isSubmitting = false;
+        return;
+    }
 
     // Set submission flag
     isSubmitting = true;
@@ -418,10 +421,12 @@ async function addCard() {
                 } finally {
                     formElements.forEach(el => el.disabled = false);
                     addButton.textContent = 'Add Card';
+                    isSubmitting = false;
                 }
                 return;
             } else {
                 showStatus('addCardStatus', 'Card not added - already exists in portfolio', 'error');
+                isSubmitting = false;
                 return;
             }
         }
@@ -447,6 +452,7 @@ async function addCard() {
                 showStatus('addCardStatus', 'This card is already in your portfolio', 'error');
                 // Refresh portfolio to sync
                 await loadPortfolio();
+                isSubmitting = false;
                 return;
             }
             throw new Error(data.error);
@@ -477,9 +483,10 @@ async function addCard() {
             showStatus('addCardStatus', `Error adding card: ${error.message}`, 'error');
         }
     } finally {
-        // Re-enable form
+        // Re-enable form and reset submission flag
         formElements.forEach(el => el.disabled = false);
         addButton.textContent = 'Add Card';
+        isSubmitting = false;
     }
 }
 
@@ -751,13 +758,13 @@ function createCardHTML(card) {
                 </div>
                 <div class="price-info">
                     <div>
-                        <div class="current-price">$${card.currentPrice.toFixed(2)}</div>
+                        <div class="current-price">${card.currentPrice !== null ? '$' + card.currentPrice.toFixed(2) : 'Price not available'}</div>
                         <div class="price-updated">
                             Updated: ${formatDate(card.lastUpdated)}
                             ${priceAgeIndicator}
                         </div>
                     </div>
-                    <div class="total-value">Total: $${(card.currentPrice * card.quantity).toFixed(2)}</div>
+                    <div class="total-value">Total: ${card.currentPrice !== null ? '$' + (card.currentPrice * card.quantity).toFixed(2) : 'N/A'}</div>
                 </div>
             </div>
         </div>
@@ -774,7 +781,12 @@ function getPriceAgeIndicator(lastUpdated) {
 
 function updateStats() {
     const totalCards = portfolio.reduce((sum, card) => sum + card.quantity, 0);
-    const totalValue = portfolio.reduce((sum, card) => sum + (card.currentPrice * card.quantity), 0);
+    const totalValue = portfolio.reduce((sum, card) => {
+        if (card.currentPrice !== null) {
+            return sum + (card.currentPrice * card.quantity);
+        }
+        return sum;
+    }, 0);
 
     document.getElementById('totalCards').textContent = totalCards;
     document.getElementById('uniqueCards').textContent = portfolio.length;

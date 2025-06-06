@@ -582,12 +582,11 @@ async function getCardPrice(name, set, number) {
             };
         }
         
-        // Use mock price if no cache available
-        const mockPrice = [5.99, 12.50, 25.00, 45.99, 89.99, 150.00, 299.99][Math.floor(Math.random() * 7)];
+        // Use null price if no cache available and rate limited
         return { 
-            price: mockPrice,
+            price: null,
             card: { name, set, number },
-            note: 'Using mock price - rate limit reached'
+            note: 'Price not available - rate limit reached'
         };
     }
 
@@ -627,12 +626,11 @@ async function getCardPrice(name, set, number) {
             };
         }
         
-        // Use mock price if no cache available
-        const mockPrice = [5.99, 12.50, 25.00, 45.99, 89.99, 150.00, 299.99][Math.floor(Math.random() * 7)];
+        // Use null price if no cache available and API error
         return { 
-            price: mockPrice,
+            price: null,
             card: { name, set, number },
-            note: 'Using mock price - API unavailable'
+            note: 'Price not available - API unavailable'
         };
     }
 }
@@ -653,7 +651,7 @@ app.get('/api/card-price', async (req, res) => {
 
 function extractHighestPrice(responseData) {
     if (!responseData || !responseData.data || !Array.isArray(responseData.data) || responseData.data.length === 0) {
-        return 0;
+        return null; // Return null instead of 0 for unavailable prices
     }
     
     const cardData = responseData.data[0];
@@ -686,7 +684,7 @@ function extractHighestPrice(responseData) {
         });
     }
     
-    return allPrices.length > 0 ? Math.max(...allPrices) : 0;
+    return allPrices.length > 0 ? Math.max(...allPrices) : null; // Return null instead of 0
 }
 
 
