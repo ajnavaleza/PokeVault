@@ -953,6 +953,63 @@ button:disabled {
     color: #666;
 }
 
+.modal-counter {
+    margin-top: 8px;
+    font-size: 0.8rem;
+    color: #888;
+    font-weight: 500;
+}
+
+.modal-nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(255, 255, 255, 0.9);
+    color: #333;
+    border: none;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    font-size: 24px;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    z-index: 10000;
+    user-select: none;
+}
+
+.modal-nav:hover {
+    background: white;
+    transform: translateY(-50%) scale(1.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.modal-nav:active {
+    transform: translateY(-50%) scale(0.95);
+}
+
+.modal-nav-prev {
+    left: -70px;
+}
+
+.modal-nav-next {
+    right: -70px;
+}
+
+.modal-nav:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.modal-nav:disabled:hover {
+    transform: translateY(-50%) scale(1);
+    box-shadow: none;
+    background: rgba(255, 255, 255, 0.5);
+}
+
 /* Modal Animations */
 @keyframes fadeIn {
     from {
@@ -998,6 +1055,20 @@ button:disabled {
         font-size: 1.1rem;
     }
     
+    .modal-nav {
+        width: 40px;
+        height: 40px;
+        font-size: 20px;
+    }
+    
+    .modal-nav-prev {
+        left: -50px;
+    }
+    
+    .modal-nav-next {
+        right: -50px;
+    }
+    
     .modal-info p {
         font-size: 0.8rem;
     }
@@ -1015,4 +1086,237 @@ button:disabled {
 
 .card-image img {
     pointer-events: none;
+}
+
+/* ==================== CONFIRMATION MODAL STYLES ==================== */
+
+.confirm-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 10000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+}
+
+.confirm-modal.show {
+    display: flex;
+    animation: fadeIn 0.3s ease-out;
+}
+
+.confirm-modal-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+}
+
+.confirm-modal-content {
+    position: relative;
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
+    max-width: 500px;
+    width: 90%;
+    max-height: 90vh;
+    overflow: hidden;
+    transform: scale(0.9);
+    animation: modalSlideIn 0.3s ease-out forwards;
+}
+
+.confirm-modal-header {
+    padding: 24px 24px 16px;
+    text-align: center;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.confirm-modal-icon {
+    width: 64px;
+    height: 64px;
+    margin: 0 auto 16px;
+    background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #dc2626;
+}
+
+.confirm-modal-header h3 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #1f2937;
+}
+
+.confirm-modal-body {
+    padding: 24px;
+    text-align: center;
+}
+
+.confirm-modal-body p {
+    margin: 0 0 20px 0;
+    color: #6b7280;
+    font-size: 1.1rem;
+    line-height: 1.6;
+}
+
+.confirm-card-preview {
+    background: #f8fafc;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 16px;
+    margin: 20px 0;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    text-align: left;
+}
+
+.confirm-card-preview img {
+    width: 60px;
+    height: 84px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 1px solid #d1d5db;
+}
+
+.confirm-card-preview .placeholder {
+    width: 60px;
+    height: 84px;
+    background: #e5e7eb;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    color: #9ca3af;
+}
+
+.confirm-card-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.confirm-card-name {
+    font-weight: 600;
+    color: #1f2937;
+    margin-bottom: 4px;
+    font-size: 1.1rem;
+}
+
+.confirm-card-details {
+    color: #6b7280;
+    font-size: 0.9rem;
+    margin-bottom: 8px;
+}
+
+.confirm-card-value {
+    color: #059669;
+    font-weight: 600;
+    font-size: 1rem;
+}
+
+.confirm-modal-actions {
+    padding: 16px 24px 24px;
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+}
+
+.confirm-btn {
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 1rem;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-width: 120px;
+}
+
+.confirm-btn-cancel {
+    background: #f3f4f6;
+    color: #374151;
+    border: 2px solid #d1d5db;
+}
+
+.confirm-btn-cancel:hover {
+    background: #e5e7eb;
+    border-color: #9ca3af;
+    transform: translateY(-1px);
+}
+
+.confirm-btn-delete {
+    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+    color: white;
+}
+
+.confirm-btn-delete:hover {
+    background: linear-gradient(135deg, #b91c1c 0%, #991b1b 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.4);
+}
+
+.confirm-btn:active {
+    transform: translateY(0);
+}
+
+/* Confirm Modal Animations */
+@keyframes modalSlideIn {
+    from {
+        transform: scale(0.9) translateY(-20px);
+        opacity: 0;
+    }
+    to {
+        transform: scale(1) translateY(0);
+        opacity: 1;
+    }
+}
+
+/* Responsive Confirm Modal */
+@media (max-width: 768px) {
+    .confirm-modal-content {
+        width: 95%;
+        margin: 20px;
+    }
+    
+    .confirm-modal-header {
+        padding: 20px 20px 12px;
+    }
+    
+    .confirm-modal-icon {
+        width: 56px;
+        height: 56px;
+    }
+    
+    .confirm-modal-header h3 {
+        font-size: 1.3rem;
+    }
+    
+    .confirm-modal-body {
+        padding: 20px;
+    }
+    
+    .confirm-modal-actions {
+        padding: 12px 20px 20px;
+        flex-direction: column;
+    }
+    
+    .confirm-btn {
+        width: 100%;
+        min-width: auto;
+    }
+    
+    .confirm-card-preview {
+        flex-direction: column;
+        text-align: center;
+        gap: 12px;
+    }
 } 

@@ -521,37 +521,50 @@ async function removeCard(cardId) {
         return;
     }
 
-    if (!confirm('Are you sure you want to remove this card?')) {
+    // Find the card to show preview
+    const card = portfolio.find(c => c.id === cardId || c.id == cardId || c.id === parseInt(cardId));
+    if (!card) {
+        showStatus('addCardStatus', 'Card not found', 'error');
         return;
     }
 
-    try {
-        const response = await makeAuthenticatedRequest(`/api/portfolio/card/${cardId}`, {
-            method: 'DELETE'
-        });
+    // Show custom confirmation modal
+    showConfirmModal(
+        'Remove Card',
+        'Are you sure you want to remove this card from your portfolio? This action cannot be undone.',
+        card,
+        async () => {
+            // Confirmed - proceed with deletion
+            try {
+                const response = await makeAuthenticatedRequest(`/api/portfolio/card/${cardId}`, {
+                    method: 'DELETE'
+                });
 
-        if (!response.ok) {
-            const data = await response.json();
-            throw new Error(data.error);
+                if (!response.ok) {
+                    const data = await response.json();
+                    throw new Error(data.error);
+                }
+
+                portfolio = portfolio.filter(c => c.id !== cardId);
+                renderPortfolio();
+                updateStats();
+                showStatus('addCardStatus', `${card.name} removed successfully!`, 'success');
+
+            } catch (error) {
+                console.error('Error removing card:', error);
+                
+                // Handle Firebase not configured case
+                if (error.message.includes('Firebase not configured')) {
+                    showStatus('addCardStatus', 
+                        'Firebase authentication is not configured. Portfolio management requires Firebase setup.', 
+                        'error'
+                    );
+                } else {
+                    showStatus('addCardStatus', `Error removing card: ${error.message}`, 'error');
+                }
+            }
         }
-
-        portfolio = portfolio.filter(card => card.id !== cardId);
-        renderPortfolio();
-        updateStats();
-
-    } catch (error) {
-        console.error('Error removing card:', error);
-        
-        // Handle Firebase not configured case
-        if (error.message.includes('Firebase not configured')) {
-            showStatus('addCardStatus', 
-                'Firebase authentication is not configured. Portfolio management requires Firebase setup.', 
-                'error'
-            );
-        } else {
-            showStatus('addCardStatus', `Error removing card: ${error.message}`, 'error');
-        }
-    }
+    );
 }
 
 async function updateAllPrices() {
@@ -724,7 +737,12 @@ function handleCardImageClick(event) {
     const cardDetails = cardImage.dataset.cardDetails;
     
     if (imageUrl && cardName && cardDetails) {
-        openImageModal(imageUrl, cardName, cardDetails);
+        // Find the index of this card in the portfolio
+        const cardIndex = portfolio.findIndex(card => 
+            card.imageUrl === imageUrl && 
+            card.name === cardName
+        );
+        openImageModal(cardIndex);
     }
 }
 
@@ -853,19 +871,15 @@ function showStatus(elementId, message, type) {
 
 /* ==================== IMAGE MODAL FUNCTIONS ==================== */
 
-function openImageModal(imageUrl, cardName, cardDetails) {
+let currentModalIndex = 0;
+
+function openImageModal(cardIndex) {
+    if (cardIndex < 0 || cardIndex >= portfolio.length) return;
+    
+    currentModalIndex = cardIndex;
+    updateModalContent();
+    
     const modal = document.getElementById('imageModal');
-    const modalImage = document.getElementById('modalImage');
-    const modalTitle = document.getElementById('modalTitle');
-    const modalDetailsEl = document.getElementById('modalDetails');
-    
-    // Set image and info
-    modalImage.src = imageUrl;
-    modalImage.alt = cardName;
-    modalTitle.textContent = cardName;
-    modalDetailsEl.textContent = cardDetails;
-    
-    // Show modal
     modal.classList.add('show');
     
     // Prevent body scrolling when modal is open
@@ -878,8 +892,49 @@ function openImageModal(imageUrl, cardName, cardDetails) {
         }
     };
     
-    // Close modal with Escape key
+    // Add keyboard navigation
     document.addEventListener('keydown', handleModalKeydown);
+}
+
+function updateModalContent() {
+    const card = portfolio[currentModalIndex];
+    if (!card) return;
+    
+    const modalImage = document.getElementById('modalImage');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalDetails = document.getElementById('modalDetails');
+    const modalCounter = document.getElementById('modalCounter');
+    const prevBtn = document.querySelector('.modal-nav-prev');
+    const nextBtn = document.querySelector('.modal-nav-next');
+    
+    // Set image and info
+    modalImage.src = card.imageUrl || '';
+    modalImage.alt = card.name;
+    modalTitle.textContent = card.name;
+    modalDetails.textContent = `${getSetDisplayName(card.set)} #${card.displayNumber || card.number}`;
+    modalCounter.textContent = `${currentModalIndex + 1} of ${portfolio.length}`;
+    
+    // Update navigation button states
+    prevBtn.disabled = currentModalIndex === 0;
+    nextBtn.disabled = currentModalIndex === portfolio.length - 1;
+    
+    // Show/hide navigation arrows based on portfolio size
+    if (portfolio.length <= 1) {
+        prevBtn.style.display = 'none';
+        nextBtn.style.display = 'none';
+    } else {
+        prevBtn.style.display = 'flex';
+        nextBtn.style.display = 'flex';
+    }
+}
+
+function navigateModal(direction) {
+    const newIndex = currentModalIndex + direction;
+    
+    if (newIndex >= 0 && newIndex < portfolio.length) {
+        currentModalIndex = newIndex;
+        updateModalContent();
+    }
 }
 
 function closeImageModal() {
@@ -895,11 +950,108 @@ function closeImageModal() {
 }
 
 function handleModalKeydown(e) {
-    if (e.key === 'Escape') {
-        closeImageModal();
+    switch(e.key) {
+        case 'Escape':
+            closeImageModal();
+            break;
+        case 'ArrowLeft':
+            e.preventDefault();
+            navigateModal(-1);
+            break;
+        case 'ArrowRight':
+            e.preventDefault();
+            navigateModal(1);
+            break;
     }
+}
+
+/* ==================== CONFIRMATION MODAL FUNCTIONS ==================== */
+
+function showConfirmModal(title, message, card, onConfirm) {
+    const modal = document.getElementById('confirmModal');
+    const titleEl = document.getElementById('confirmTitle');
+    const messageEl = document.getElementById('confirmMessage');
+    const previewEl = document.getElementById('confirmCardPreview');
+    const cancelBtn = document.getElementById('confirmCancel');
+    const deleteBtn = document.getElementById('confirmDelete');
+    
+    // Set content
+    titleEl.textContent = title;
+    messageEl.textContent = message;
+    
+    // Create card preview
+    const imageHTML = card.imageUrl 
+        ? `<img src="${card.imageUrl}" alt="${card.name}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+           <div class="placeholder" style="display: none;">🎴</div>`
+        : `<div class="placeholder">🎴</div>`;
+    
+    const priceText = card.currentPrice !== null 
+        ? `$${card.currentPrice.toFixed(2)}`
+        : 'Price not available';
+    
+    const totalValue = card.currentPrice !== null 
+        ? ` × ${card.quantity} = $${(card.currentPrice * card.quantity).toFixed(2)}`
+        : '';
+    
+    previewEl.innerHTML = `
+        ${imageHTML}
+        <div class="confirm-card-info">
+            <div class="confirm-card-name">${card.name}</div>
+            <div class="confirm-card-details">${getSetDisplayName(card.set)} #${card.displayNumber || card.number}</div>
+            <div class="confirm-card-value">${priceText}${totalValue}</div>
+        </div>
+    `;
+    
+    // Set up event listeners
+    cancelBtn.onclick = closeConfirmModal;
+    deleteBtn.onclick = () => {
+        closeConfirmModal();
+        onConfirm();
+    };
+    
+    // Close on overlay click
+    const overlay = modal.querySelector('.confirm-modal-overlay');
+    overlay.onclick = closeConfirmModal;
+    
+    // Show modal
+    modal.classList.add('show');
+    document.body.style.overflow = 'hidden';
+    
+    // Focus on cancel button for better accessibility
+    setTimeout(() => cancelBtn.focus(), 100);
+    
+    // Handle escape key
+    const handleEscape = (e) => {
+        if (e.key === 'Escape') {
+            closeConfirmModal();
+        }
+    };
+    
+    document.addEventListener('keydown', handleEscape);
+    modal._escapeHandler = handleEscape; // Store for cleanup
+}
+
+function closeConfirmModal() {
+    const modal = document.getElementById('confirmModal');
+    modal.classList.remove('show');
+    document.body.style.overflow = '';
+    
+    // Clean up event listeners
+    if (modal._escapeHandler) {
+        document.removeEventListener('keydown', modal._escapeHandler);
+        delete modal._escapeHandler;
+    }
+    
+    // Clear button handlers
+    document.getElementById('confirmCancel').onclick = null;
+    document.getElementById('confirmDelete').onclick = null;
+    const overlay = modal.querySelector('.confirm-modal-overlay');
+    overlay.onclick = null;
 }
 
 // Make functions globally available
 window.openImageModal = openImageModal;
-window.closeImageModal = closeImageModal; 
+window.closeImageModal = closeImageModal;
+window.navigateModal = navigateModal;
+window.showConfirmModal = showConfirmModal;
+window.closeConfirmModal = closeConfirmModal; 
