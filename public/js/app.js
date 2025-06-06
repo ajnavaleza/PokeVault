@@ -746,7 +746,7 @@ function createCardHTML(card) {
     
     return `
         <div class="card-item">
-            <button class="remove-btn" onclick="removeCard(${card.id})" title="Remove card">×</button>
+            <button class="remove-btn" onclick="removeCard('${card.id}')" title="Remove card">×</button>
             ${imageHTML}
             <div class="card-content">
                 <div class="card-name">${card.name}</div>
