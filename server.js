@@ -550,36 +550,50 @@ app.get('/api/cards/search', async (req, res) => {
     }
 });
 
-// Card price endpoint
-app.get('/api/card-price', async (req, res) => {
-    try {
-        const { name, set, number } = req.query;
-        
-        if (!name || !set || !number || !POKEMON_API_KEY) {
-            return res.status(400).json({ error: 'Missing required parameters or API key not configured' });
-        }
+// Helper function to get card price (used internally and by API endpoint)
+async function getCardPrice(name, set, number) {
+    if (!name || !set || !number || !POKEMON_API_KEY) {
+        throw new Error('Missing required parameters or API key not configured');
+    }
 
-        const setId = getSetId(set);
-        const cacheKey = getPriceCacheKey(name, setId, number);
-        
-        // Check cache first
+    const setId = getSetId(set);
+    const cacheKey = getPriceCacheKey(name, setId, number);
+    
+    // Check cache first
+    if (priceCache.has(cacheKey)) {
+        const cachedData = priceCache.get(cacheKey);
+        if (isCacheValid(cachedData)) {
+            return { 
+                price: cachedData.price,
+                card: { name, set, number },
+                cached: true
+            };
+        }
+    }
+
+    if (!canMakeApiCall()) {
+        // Handle rate limit by using cached data if available
         if (priceCache.has(cacheKey)) {
             const cachedData = priceCache.get(cacheKey);
-            if (isCacheValid(cachedData)) {
-                return res.json({ 
-                    price: cachedData.price,
-                    card: { name, set, number },
-                    cached: true
-                });
-            }
+            return { 
+                price: cachedData.price,
+                card: { name, set, number },
+                note: 'Using cached price - rate limit reached'
+            };
         }
+        
+        // Use mock price if no cache available
+        const mockPrice = [5.99, 12.50, 25.00, 45.99, 89.99, 150.00, 299.99][Math.floor(Math.random() * 7)];
+        return { 
+            price: mockPrice,
+            card: { name, set, number },
+            note: 'Using mock price - rate limit reached'
+        };
+    }
 
-        if (!canMakeApiCall()) {
-            return handleRateLimitExceeded(res, cacheKey, { name, set, number });
-        }
+    trackApiCall();
 
-        trackApiCall();
-
+    try {
         const response = await axios.get(`${API_BASE_URL}/prices`, {
             params: { name, setId, number, limit: 1 },
             headers: {
@@ -596,34 +610,46 @@ app.get('/api/card-price', async (req, res) => {
             timestamp: Date.now()
         });
 
-        res.json({ 
+        return { 
             price: price,
             card: { name, set, number }
-        });
-
+        };
     } catch (error) {
         console.error('Error fetching card price:', error.message);
-        handlePriceError(res, req.query);
+        
+        // Handle error by using cached data if available
+        if (priceCache.has(cacheKey)) {
+            const cachedData = priceCache.get(cacheKey);
+            return { 
+                price: cachedData.price,
+                card: { name, set, number },
+                note: 'Using cached price - API error'
+            };
+        }
+        
+        // Use mock price if no cache available
+        const mockPrice = [5.99, 12.50, 25.00, 45.99, 89.99, 150.00, 299.99][Math.floor(Math.random() * 7)];
+        return { 
+            price: mockPrice,
+            card: { name, set, number },
+            note: 'Using mock price - API unavailable'
+        };
+    }
+}
+
+// Card price endpoint
+app.get('/api/card-price', async (req, res) => {
+    try {
+        const { name, set, number } = req.query;
+        const priceData = await getCardPrice(name, set, number);
+        res.json(priceData);
+    } catch (error) {
+        console.error('Error fetching card price:', error.message);
+        res.status(400).json({ error: error.message });
     }
 });
 
-function handleRateLimitExceeded(res, cacheKey, cardInfo) {
-    if (priceCache.has(cacheKey)) {
-        const cachedData = priceCache.get(cacheKey);
-        return res.json({ 
-            price: cachedData.price,
-            card: cardInfo,
-            note: 'Using cached price - rate limit reached'
-        });
-    }
-    
-    const mockPrice = [5.99, 12.50, 25.00, 45.99, 89.99, 150.00, 299.99][Math.floor(Math.random() * 7)];
-    return res.json({ 
-        price: mockPrice,
-        card: cardInfo,
-        note: 'Using mock price - rate limit reached'
-    });
-}
+
 
 function extractHighestPrice(responseData) {
     if (!responseData || !responseData.data || !Array.isArray(responseData.data) || responseData.data.length === 0) {
@@ -663,26 +689,7 @@ function extractHighestPrice(responseData) {
     return allPrices.length > 0 ? Math.max(...allPrices) : 0;
 }
 
-function handlePriceError(res, queryParams) {
-    const setId = getSetId(queryParams.set);
-    const cacheKey = getPriceCacheKey(queryParams.name, setId, queryParams.number);
-    
-    if (priceCache.has(cacheKey)) {
-        const cachedData = priceCache.get(cacheKey);
-        return res.json({ 
-            price: cachedData.price,
-            card: queryParams,
-            note: 'Using cached price - API error'
-        });
-    }
-    
-    const mockPrice = [5.99, 12.50, 25.00, 45.99, 89.99, 150.00, 299.99][Math.floor(Math.random() * 7)];
-    res.json({ 
-        price: mockPrice,
-        card: queryParams,
-        note: 'Using mock price - API unavailable'
-    });
-}
+
 
 // Portfolio management endpoints (with authentication)
 app.get('/api/portfolio', authenticateToken, async (req, res) => {
@@ -705,10 +712,8 @@ app.post('/api/portfolio/add', authenticateToken, async (req, res) => {
             return res.status(400).json({ error: 'Missing required fields' });
         }
 
-        // Get price using API set ID
-        const priceResponse = await axios.get(`http://localhost:${PORT}/api/card-price`, {
-            params: { name, set, number }
-        });
+        // Get price using direct function call instead of HTTP request
+        const priceData = await getCardPrice(name, set, number);
 
         // Get image using original tcgdx set ID
         const imageSetId = originalSetId || set;
@@ -724,7 +729,7 @@ app.post('/api/portfolio/add', authenticateToken, async (req, res) => {
             number,
             displayNumber: displayNumber || number,
             quantity: parseInt(quantity),
-            currentPrice: priceResponse.data.price,
+            currentPrice: priceData.price,
             imageUrl: imageUrl,
             dateAdded: new Date().toISOString(),
             lastUpdated: new Date().toISOString()
@@ -794,12 +799,15 @@ app.put('/api/portfolio/update-prices', authenticateToken, async (req, res) => {
                                   (Date.now() - new Date(card.lastUpdated).getTime()) > CACHE_DURATION;
 
                 if (needsUpdate && canMakeApiCall()) {
-                    const priceResponse = await axios.get(`http://localhost:${PORT}/api/card-price`, {
-                        params: { name: card.name, set: card.set, number: card.number }
-                    });
-                    card.currentPrice = priceResponse.data.price;
-                    card.lastUpdated = new Date().toISOString();
-                    updatedCount++;
+                    try {
+                        const priceData = await getCardPrice(card.name, card.set, card.number);
+                        card.currentPrice = priceData.price;
+                        card.lastUpdated = new Date().toISOString();
+                        updatedCount++;
+                    } catch (error) {
+                        console.error(`Error fetching price for ${card.name}:`, error.message);
+                        skippedCount++;
+                    }
                 } else {
                     if (priceCache.has(cacheKey)) {
                         const cachedData = priceCache.get(cacheKey);
