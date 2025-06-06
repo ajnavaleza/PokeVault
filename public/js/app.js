@@ -715,6 +715,19 @@ function updateApiStatsDisplay() {
 
 /* ==================== UI RENDERING ==================== */
 
+function handleCardImageClick(event) {
+    const cardImage = event.target.closest('.card-image');
+    if (!cardImage) return;
+    
+    const imageUrl = cardImage.dataset.imageUrl;
+    const cardName = cardImage.dataset.cardName;
+    const cardDetails = cardImage.dataset.cardDetails;
+    
+    if (imageUrl && cardName && cardDetails) {
+        openImageModal(imageUrl, cardName, cardDetails);
+    }
+}
+
 function renderPortfolio() {
     const container = document.getElementById('cardsContainer');
     
@@ -730,12 +743,21 @@ function renderPortfolio() {
     }
 
     container.innerHTML = portfolio.map(createCardHTML).join('');
+    
+    // Add event delegation for card image clicks
+    container.removeEventListener('click', handleCardImageClick); // Remove any existing listener
+    container.addEventListener('click', handleCardImageClick);
+    
     updateStats();
 }
 
 function createCardHTML(card) {
     const imageHTML = card.imageUrl 
-        ? `<div class="card-image" onclick="openImageModal('${card.imageUrl}', '${card.name.replace(/'/g, "\\'")}', '${getSetDisplayName(card.set)} #${card.displayNumber || card.number}')">
+        ? `<div class="card-image" 
+                data-image-url="${card.imageUrl}" 
+                data-card-name="${card.name}" 
+                data-card-details="${getSetDisplayName(card.set)} #${card.displayNumber || card.number}"
+                style="cursor: pointer;">
              <img src="${card.imageUrl}" alt="${card.name}" onerror="this.parentElement.style.display='none'">
            </div>`
         : `<div class="card-image-placeholder">
