@@ -565,6 +565,19 @@ button:disabled {
     color: #38a169;
 }
 
+.clickable-price {
+    cursor: pointer;
+    transition: all 0.2s ease;
+    padding: 4px 8px;
+    border-radius: 6px;
+    display: inline-block;
+}
+
+.clickable-price:hover {
+    background: rgba(56, 161, 105, 0.1);
+    transform: scale(1.05);
+}
+
 .price-updated {
     font-size: 0.8rem;
     color: #718096;
@@ -1062,15 +1075,31 @@ button:disabled {
     }
     
     .modal-nav-prev {
-        left: -50px;
+        left: 10px;
     }
     
     .modal-nav-next {
-        right: -50px;
+        right: 10px;
     }
     
     .modal-info p {
         font-size: 0.8rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .modal-nav {
+        width: 35px;
+        height: 35px;
+        font-size: 18px;
+    }
+    
+    .modal-nav-prev {
+        left: 5px;
+    }
+    
+    .modal-nav-next {
+        right: 5px;
     }
 }
 
@@ -1318,5 +1347,251 @@ button:disabled {
         flex-direction: column;
         text-align: center;
         gap: 12px;
+    }
+}
+
+/* ==================== PRICE HISTORY MODAL STYLES ==================== */
+
+.price-history-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 10000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+}
+
+.price-history-modal.show {
+    display: flex;
+    animation: fadeIn 0.3s ease-out;
+}
+
+.price-history-modal-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+}
+
+.price-history-modal-content {
+    position: relative;
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
+    max-width: 900px;
+    width: 90%;
+    max-height: 90vh;
+    overflow: hidden;
+    transform: scale(0.9);
+    animation: modalSlideIn 0.3s ease-out forwards;
+}
+
+.price-history-modal-header {
+    padding: 24px;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: linear-gradient(135deg, #4c51bf, #667eea);
+    color: white;
+}
+
+.price-history-close {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    border: none;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    font-size: 20px;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    z-index: 10001;
+}
+
+.price-history-close:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: scale(1.1);
+}
+
+.price-history-card-info {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.price-history-card-image {
+    width: 60px;
+    height: 84px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+.price-history-card-info h3 {
+    margin: 0 0 4px 0;
+    font-size: 1.4rem;
+    font-weight: 600;
+}
+
+.price-history-card-info p {
+    margin: 0;
+    font-size: 1rem;
+    opacity: 0.9;
+}
+
+.price-history-modal-body {
+    padding: 24px;
+    max-height: calc(90vh - 120px);
+    overflow-y: auto;
+}
+
+.price-history-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.price-stat {
+    background: #f8fafc;
+    padding: 16px;
+    border-radius: 12px;
+    text-align: center;
+    border: 1px solid #e2e8f0;
+}
+
+.price-stat-label {
+    display: block;
+    font-size: 0.9rem;
+    color: #64748b;
+    margin-bottom: 8px;
+    font-weight: 500;
+}
+
+.price-stat-value {
+    display: block;
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #1f2937;
+}
+
+.price-stat-value.positive {
+    color: #059669;
+}
+
+.price-stat-value.negative {
+    color: #dc2626;
+}
+
+.price-chart-container {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    border: 1px solid #e2e8f0;
+    height: 400px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.chart-explanation {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin-bottom: 16px;
+    font-size: 0.9rem;
+    color: #4a5568;
+}
+
+.chart-explanation p {
+    margin: 0;
+    line-height: 1.4;
+}
+
+.price-history-loading {
+    text-align: center;
+    color: #64748b;
+    font-style: italic;
+}
+
+.price-history-error {
+    text-align: center;
+    color: #dc2626;
+    background: #fee2e2;
+    padding: 16px;
+    border-radius: 8px;
+    border: 1px solid #fecaca;
+}
+
+/* Responsive Price History Modal */
+@media (max-width: 768px) {
+    .price-history-modal-content {
+        width: 95%;
+        max-height: 95vh;
+    }
+    
+    .price-history-modal-header {
+        padding: 16px;
+        flex-direction: column;
+        gap: 12px;
+        text-align: center;
+    }
+    
+    .price-history-card-info {
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .price-history-modal-body {
+        padding: 16px;
+        max-height: calc(95vh - 140px);
+    }
+    
+    .price-history-stats {
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        margin-bottom: 16px;
+    }
+    
+    .price-stat {
+        padding: 12px;
+    }
+    
+    .price-stat-label {
+        font-size: 0.8rem;
+    }
+    
+    .price-stat-value {
+        font-size: 1.2rem;
+    }
+    
+    .price-chart-container {
+        height: 300px;
+        padding: 12px;
+    }
+}
+
+@media (max-width: 480px) {
+    .price-history-stats {
+        grid-template-columns: 1fr;
+    }
+    
+    .price-chart-container {
+        height: 250px;
     }
 } 

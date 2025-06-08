@@ -1,6 +1,10 @@
 {
   "sets": [
     {
+      "id": "sv10",
+      "name": "Destined Rivals"
+    },
+    {
       "id": "sv9",
       "name": "Journey Together"
     },
@@ -249,12 +253,12 @@
       "name": "Guardians Rising"
     },
     {
-      "id": "sm1",
-      "name": "Sun & Moon"
-    },
-    {
       "id": "smp",
       "name": "SM Black Star Promos"
+    },
+    {
+      "id": "sm1",
+      "name": "Sun & Moon"
     },
     {
       "id": "xy12",
@@ -409,12 +413,12 @@
       "name": "HS—Unleashed"
     },
     {
-      "id": "hsp",
-      "name": "HGSS Black Star Promos"
-    },
-    {
       "id": "hgss1",
       "name": "HeartGold & SoulSilver"
+    },
+    {
+      "id": "hsp",
+      "name": "HGSS Black Star Promos"
     },
     {
       "id": "ru1",
@@ -529,12 +533,12 @@
       "name": "Delta Species"
     },
     {
-      "id": "ex10",
-      "name": "Unseen Forces"
-    },
-    {
       "id": "pop2",
       "name": "POP Series 2"
+    },
+    {
+      "id": "ex10",
+      "name": "Unseen Forces"
     },
     {
       "id": "ex9",
@@ -661,5 +665,5 @@
       "name": "Base"
     }
   ],
-  "timestamp": 1749246219515
+  "timestamp": 1749412241395
 }

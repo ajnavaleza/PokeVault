@@ -177,6 +177,55 @@
         </div>
     </div>
 
+    <!-- Price History Modal -->
+    <div id="priceHistoryModal" class="price-history-modal">
+        <div class="price-history-modal-overlay"></div>
+        <div class="price-history-modal-content">
+            <div class="price-history-modal-header">
+                <button class="price-history-close" onclick="closePriceHistoryModal()">&times;</button>
+                <div class="price-history-card-info">
+                    <img id="priceHistoryCardImage" src="" alt="" class="price-history-card-image">
+                    <div>
+                        <h3 id="priceHistoryCardName">Card Name</h3>
+                        <p id="priceHistoryCardDetails">Set Name #000</p>
+                    </div>
+                </div>
+            </div>
+            <div class="price-history-modal-body">
+                <div class="price-history-stats">
+                    <div class="price-stat">
+                        <span class="price-stat-label">Current Price</span>
+                        <span class="price-stat-value" id="currentPriceValue">$0.00</span>
+                    </div>
+                    <div class="price-stat">
+                        <span class="price-stat-label">30-Day High</span>
+                        <span class="price-stat-value" id="highPriceValue">$0.00</span>
+                    </div>
+                    <div class="price-stat">
+                        <span class="price-stat-label">30-Day Low</span>
+                        <span class="price-stat-value" id="lowPriceValue">$0.00</span>
+                    </div>
+                    <div class="price-stat">
+                        <span class="price-stat-label">Price Change</span>
+                        <span class="price-stat-value" id="priceChangeValue">+$0.00 (0%)</span>
+                    </div>
+                </div>
+                <div class="price-chart-container">
+                    <canvas id="priceHistoryChart"></canvas>
+                </div>
+                <div id="priceHistoryLoading" class="price-history-loading">
+                    <p>Loading price history...</p>
+                </div>
+                <div id="priceHistoryError" class="price-history-error" style="display: none;">
+                    <p>No price history available for this card.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chart.js for price history graphs -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
     <!-- Firebase and App Scripts -->
     <script>
         // Firebase configuration embedded to avoid 404 issues during deployment

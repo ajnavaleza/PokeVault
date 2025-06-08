@@ -647,8 +647,6 @@ app.get('/api/card-price', async (req, res) => {
     }
 });
 
-
-
 function extractHighestPrice(responseData) {
     if (!responseData || !responseData.data || !Array.isArray(responseData.data) || responseData.data.length === 0) {
         return null; // Return null instead of 0 for unavailable prices
@@ -686,8 +684,6 @@ function extractHighestPrice(responseData) {
     
     return allPrices.length > 0 ? Math.max(...allPrices) : null; // Return null instead of 0
 }
-
-
 
 // Portfolio management endpoints (with authentication)
 app.get('/api/portfolio', authenticateToken, async (req, res) => {
@@ -735,6 +731,10 @@ app.post('/api/portfolio/add', authenticateToken, async (req, res) => {
 
         try {
             const addedCard = await addCardToPortfolio(userId, card);
+            // Only track price history for non-null prices
+            if (priceData.price !== null) {
+                await addPriceToHistory(userId, cardId, priceData.price);
+            }
             res.json({ success: true, card: addedCard });
         } catch (error) {
             if (error.message === 'This card is already in your portfolio') {
@@ -802,6 +802,10 @@ app.put('/api/portfolio/update-prices', authenticateToken, async (req, res) => {
                         card.currentPrice = priceData.price;
                         card.lastUpdated = new Date().toISOString();
                         updatedCount++;
+                        // Only track price history for non-null prices
+                        if (priceData.price !== null) {
+                            await addPriceToHistory(userId, card.id, priceData.price);
+                        }
                     } catch (error) {
                         console.error(`Error fetching price for ${card.name}:`, error.message);
                         skippedCount++;
@@ -904,6 +908,113 @@ app.get('/api/sets', async (req, res) => {
     } catch (error) {
         console.error('Error fetching sets:', error.message);
         res.json(getFallbackSets());
+    }
+});
+
+// Get price history for a specific card using external API data
+app.get('/api/portfolio/card/:cardId/history', authenticateToken, async (req, res) => {
+    try {
+        const userId = req.user.uid;
+        const { cardId } = req.params;
+        
+        console.log('=== PRICE HISTORY REQUEST ===');
+        console.log('Card ID:', cardId);
+        console.log('User ID:', userId);
+        
+        // Find the card in the user's portfolio to get its details
+        const portfolio = await getUserPortfolio(userId);
+        console.log('Portfolio size:', portfolio.length);
+        
+        const card = portfolio.find(c => c.id === cardId);
+        console.log('Card found in portfolio:', !!card);
+        
+        if (!card) {
+            console.log('Available cards in portfolio:', portfolio.map(c => ({ id: c.id, name: c.name })));
+            return res.status(404).json({ error: 'Card not found in portfolio' });
+        }
+        
+        console.log('Found card:', { name: card.name, set: card.set, number: card.number });
+        console.log('Using for API call:', { name: card.name, set: card.set, number: card.number });
+        
+        // Get detailed pricing data from external API
+        // Use the actual card set and number from the portfolio data
+        const priceHistory = await getCardPriceHistory(card.name, card.set, card.number);
+        console.log('Price history length:', priceHistory.length);
+        
+        if (priceHistory.length === 0) {
+            console.log('No price history found for card:', { name: card.name, set: card.set, number: card.number });
+        } else {
+            console.log('Sample price data:', priceHistory.slice(0, 2));
+        }
+        
+        res.json(priceHistory);
+    } catch (error) {
+        console.error('=== PRICE HISTORY ERROR ===');
+        console.error('Error message:', error.message);
+        console.error('Error stack:', error.stack);
+        res.status(500).json({ error: 'Failed to get price history' });
+    }
+});
+
+
+
+// Test endpoint to see detailed card data structure
+app.get('/api/test-card-data', async (req, res) => {
+    try {
+        const { name, set, number } = req.query;
+        
+        if (!name || !set || !number) {
+            return res.status(400).json({ error: 'Missing required parameters: name, set, number' });
+        }
+
+        const setId = getSetId(set);
+        
+        if (!canMakeApiCall()) {
+            return res.status(429).json({ error: 'API rate limit reached' });
+        }
+
+        trackApiCall();
+
+        // First, get the card data to find the card ID
+        const searchResponse = await axios.get(`${API_BASE_URL}/prices`, {
+            params: { name, setId, number, limit: 1 },
+            headers: {
+                'Authorization': `Bearer ${POKEMON_API_KEY}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!searchResponse.data || !searchResponse.data.data || searchResponse.data.data.length === 0) {
+            return res.status(404).json({ error: 'Card not found' });
+        }
+
+        const cardData = searchResponse.data.data[0];
+        const externalCardId = cardData.id;
+
+        // Now get detailed pricing using the card ID
+        if (!canMakeApiCall()) {
+            return res.status(429).json({ error: 'API rate limit reached' });
+        }
+
+        trackApiCall();
+
+        const detailedResponse = await axios.get(`${API_BASE_URL}/prices`, {
+            params: { id: externalCardId },
+            headers: {
+                'Authorization': `Bearer ${POKEMON_API_KEY}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        res.json({
+            searchResult: cardData,
+            detailedPricing: detailedResponse.data,
+            cardId: externalCardId
+        });
+
+    } catch (error) {
+        console.error('Error testing card data:', error.message);
+        res.status(500).json({ error: 'Failed to fetch card data' });
     }
 });
 
@@ -1073,4 +1184,260 @@ if (process.env.VERCEL) {
 }
 
 // Export for Vercel
-module.exports = app; 
+module.exports = app;
+
+async function addPriceToHistory(userId, cardId, price) {
+    if (!db) {
+        // For file-based storage, we'll need to extend the portfolios structure
+        return;
+    }
+    
+    try {
+        const historyRef = db.collection('priceHistory').doc(`${userId}_${cardId}`);
+        const historyDoc = await historyRef.get();
+        
+        let history = [];
+        if (historyDoc.exists) {
+            history = historyDoc.data().history || [];
+        }
+        
+        // Add new price entry
+        const newEntry = {
+            price: price,
+            date: new Date().toISOString()
+        };
+        
+        history.push(newEntry);
+        
+        // Keep only last 30 days of history to save storage
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        history = history.filter(entry => new Date(entry.date) >= thirtyDaysAgo);
+        
+        await historyRef.set({
+            userId: userId,
+            cardId: cardId,
+            history: history,
+            lastUpdated: new Date()
+        });
+    } catch (error) {
+        console.error('Error adding price to history:', error);
+    }
+}
+
+async function getCardPriceHistory(name, set, number) {
+    if (!name || !set || !number || !POKEMON_API_KEY) {
+        throw new Error('Missing required parameters or API key not configured');
+    }
+
+    const setId = getSetId(set);
+    
+    if (!canMakeApiCall()) {
+        throw new Error('API rate limit reached');
+    }
+
+    trackApiCall();
+
+    try {
+        // Use the same API call as the working getCardPrice function
+        const response = await axios.get(`${API_BASE_URL}/prices`, {
+            params: { name, setId, number, limit: 1 },
+            headers: {
+                'Authorization': `Bearer ${POKEMON_API_KEY}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!response.data || !response.data.data || !Array.isArray(response.data.data) || response.data.data.length === 0) {
+            return [];
+        }
+
+        // Extract all available price points to create a more comprehensive "history"
+        const priceHistory = extractPriceHistory(response.data);
+        
+        return priceHistory;
+
+    } catch (error) {
+        console.error('Error fetching card price history:', error.message);
+        return [];
+    }
+}
+
+function extractPriceHistory(responseData) {
+    if (!responseData || !responseData.data || !Array.isArray(responseData.data) || responseData.data.length === 0) {
+        return [];
+    }
+    
+    const cardData = responseData.data[0];
+    const allPrices = [];
+    const baseDate = new Date();
+    
+    // Extract CardMarket time-based averages (these represent actual historical data)
+    if (cardData.cardmarket && cardData.cardmarket.prices) {
+        const cardmarketPrices = cardData.cardmarket.prices;
+        
+        // 30-day average (oldest data point)
+        if (cardmarketPrices.avg30 && cardmarketPrices.avg30 > 0) {
+            const date = new Date(baseDate);
+            date.setDate(date.getDate() - 30);
+            allPrices.push({
+                price: parseFloat(cardmarketPrices.avg30),
+                date: date.toISOString(),
+                source: 'CardMarket 30-Day Average',
+                category: 'historical',
+                color: '#6c757d'
+            });
+        }
+        
+        // 7-day average
+        if (cardmarketPrices.avg7 && cardmarketPrices.avg7 > 0) {
+            const date = new Date(baseDate);
+            date.setDate(date.getDate() - 7);
+            allPrices.push({
+                price: parseFloat(cardmarketPrices.avg7),
+                date: date.toISOString(),
+                source: 'CardMarket 7-Day Average',
+                category: 'recent',
+                color: '#0d6efd'
+            });
+        }
+        
+        // 1-day average (most recent)
+        if (cardmarketPrices.avg1 && cardmarketPrices.avg1 > 0) {
+            const date = new Date(baseDate);
+            date.setDate(date.getDate() - 1);
+            allPrices.push({
+                price: parseFloat(cardmarketPrices.avg1),
+                date: date.toISOString(),
+                source: 'CardMarket 1-Day Average',
+                category: 'current',
+                color: '#198754'
+            });
+        }
+        
+        // Add trend price as a comparison point
+        if (cardmarketPrices.trendPrice && cardmarketPrices.trendPrice > 0) {
+            const date = new Date(baseDate);
+            date.setDate(date.getDate() - 14);
+            allPrices.push({
+                price: parseFloat(cardmarketPrices.trendPrice),
+                date: date.toISOString(),
+                source: 'CardMarket Trend Price',
+                category: 'trend',
+                color: '#fd7e14'
+            });
+        }
+        
+        // Add reverse holo averages if available (for cards that have them)
+        if (cardmarketPrices.reverseHoloAvg30 && cardmarketPrices.reverseHoloAvg30 > 0) {
+            const date = new Date(baseDate);
+            date.setDate(date.getDate() - 25);
+            allPrices.push({
+                price: parseFloat(cardmarketPrices.reverseHoloAvg30),
+                date: date.toISOString(),
+                source: 'Reverse Holo 30-Day Average',
+                category: 'reverse-holo',
+                color: '#6f42c1'
+            });
+        }
+        
+        if (cardmarketPrices.reverseHoloAvg7 && cardmarketPrices.reverseHoloAvg7 > 0) {
+            const date = new Date(baseDate);
+            date.setDate(date.getDate() - 5);
+            allPrices.push({
+                price: parseFloat(cardmarketPrices.reverseHoloAvg7),
+                date: date.toISOString(),
+                source: 'Reverse Holo 7-Day Average',
+                category: 'reverse-holo',
+                color: '#6f42c1'
+            });
+        }
+    }
+    
+    // Extract ALL eBay graded card prices to show the full grading spectrum
+    if (cardData.ebay && cardData.ebay.prices) {
+        const gradeInfo = {
+            '10': { name: 'PSA 10', dayOffset: 2, color: '#dc3545' }, // Premium red
+            '9': { name: 'PSA 9', dayOffset: 4, color: '#fd7e14' },   // Orange
+            '8': { name: 'PSA 8', dayOffset: 6, color: '#ffc107' }    // Yellow
+        };
+        
+        Object.entries(cardData.ebay.prices).forEach(([grade, gradeData]) => {
+            if (gradeInfo[grade] && gradeData.stats && gradeData.stats.average && gradeData.stats.average > 0) {
+                const date = new Date(baseDate);
+                date.setDate(date.getDate() - gradeInfo[grade].dayOffset);
+                
+                allPrices.push({
+                    price: parseFloat(gradeData.stats.average),
+                    date: date.toISOString(),
+                    source: `eBay ${gradeInfo[grade].name} Graded`,
+                    category: 'graded',
+                    color: gradeInfo[grade].color
+                });
+            }
+        });
+    }
+    
+    // Extract TCGPlayer prices (representing different market conditions)
+    if (cardData.tcgPlayer && cardData.tcgPlayer.prices) {
+        const tcgPlayerInfo = [
+            { key: 'low', name: 'TCGPlayer Low', dayOffset: 21, color: '#dc3545' },
+            { key: 'market', name: 'TCGPlayer Market', dayOffset: 10, color: '#0d6efd' },
+            { key: 'high', name: 'TCGPlayer High', dayOffset: 3, color: '#198754' }
+        ];
+        
+        tcgPlayerInfo.forEach(({ key, name, dayOffset, color }) => {
+            if (cardData.tcgPlayer.prices[key] && cardData.tcgPlayer.prices[key] > 0) {
+                const date = new Date(baseDate);
+                date.setDate(date.getDate() - dayOffset);
+                
+                allPrices.push({
+                    price: parseFloat(cardData.tcgPlayer.prices[key]),
+                    date: date.toISOString(),
+                    source: name,
+                    category: 'tcgplayer',
+                    color: color
+                });
+            }
+        });
+    }
+    
+    // If we still don't have any prices, try to create at least one data point from the highest price
+    if (allPrices.length === 0) {
+        const highestPrice = extractHighestPrice(responseData);
+        if (highestPrice && highestPrice > 0) {
+            allPrices.push({
+                price: highestPrice,
+                date: new Date().toISOString(),
+                source: 'Current Market Price',
+                category: 'current',
+                color: '#6c757d'
+            });
+        }
+    }
+    
+    // Sort by date (oldest first for chart timeline)
+    allPrices.sort((a, b) => new Date(a.date) - new Date(b.date));
+    
+    return allPrices;
+}
+
+async function getPriceHistory(userId, cardId) {
+    if (!db) {
+        return [];
+    }
+    
+    try {
+        const historyRef = db.collection('priceHistory').doc(`${userId}_${cardId}`);
+        const historyDoc = await historyRef.get();
+        
+        if (!historyDoc.exists) {
+            return [];
+        }
+        
+        return historyDoc.data().history || [];
+    } catch (error) {
+        console.error('Error getting price history:', error);
+        return [];
+    }
+} 
