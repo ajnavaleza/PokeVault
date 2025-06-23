@@ -1,0 +1,148 @@
+/* ==================== NAVIGATION HEADER STYLES ==================== */
+
+.nav-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+    padding: 0;
+}
+
+.nav-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 70px;
+}
+
+.nav-brand {
+    display: flex;
+    align-items: center;
+}
+
+.nav-logo {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #4c51bf;
+    text-decoration: none;
+    transition: all 0.3s ease;
+}
+
+.nav-logo:hover {
+    transform: scale(1.05);
+}
+
+.nav-menu {
+    display: flex;
+    align-items: center;
+    gap: 30px;
+}
+
+.nav-link {
+    color: #4a5568;
+    text-decoration: none;
+    font-weight: 500;
+    padding: 8px 16px;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.nav-link:hover {
+    color: #4c51bf;
+    background: rgba(76, 81, 191, 0.1);
+}
+
+.nav-link.active {
+    color: #4c51bf;
+    background: rgba(76, 81, 191, 0.1);
+    font-weight: 600;
+}
+
+.user-nav-info {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.user-nav-info .user-profile {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.9rem;
+    color: #4a5568;
+}
+
+.user-nav-info .btn-outline {
+    background: transparent;
+    border: 2px solid #4c51bf;
+    color: #4c51bf;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-decoration: none;
+}
+
+.user-nav-info .btn-outline:hover {
+    background: #4c51bf;
+    color: white;
+}
+
+/* Responsive Navigation */
+@media (max-width: 768px) {
+    .nav-container {
+        padding: 0 15px;
+        height: 60px;
+    }
+    
+    .nav-logo {
+        font-size: 1.3rem;
+    }
+    
+    .nav-menu {
+        gap: 15px;
+    }
+    
+    .nav-link {
+        padding: 6px 12px;
+        font-size: 0.9rem;
+    }
+    
+    .user-nav-info {
+        gap: 10px;
+    }
+    
+    .user-nav-info .user-profile {
+        font-size: 0.8rem;
+    }
+    
+    .user-nav-info .btn-outline {
+        padding: 6px 12px;
+        font-size: 0.8rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .nav-menu {
+        gap: 10px;
+    }
+    
+    .nav-link {
+        padding: 5px 8px;
+        font-size: 0.8rem;
+    }
+    
+    .user-nav-info .user-profile span {
+        display: none;
+    }
+} 

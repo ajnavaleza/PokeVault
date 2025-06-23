@@ -1,0 +1,50 @@
+/* ==================== MODAL STYLES ==================== */
+
+/* Hide all modals by default */
+.image-modal,
+.confirm-modal,
+.price-history-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 2000;
+    justify-content: center;
+    align-items: center;
+    background: rgba(0,0,0,0.7);
+}
+
+/* Show modal when .show class is added */
+.image-modal.show,
+.confirm-modal.show,
+.price-history-modal.show {
+    display: flex;
+}
+
+/* Modal content base style */
+.modal-content,
+.confirm-modal-content,
+.price-history-modal-content {
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+    max-width: 95vw;
+    max-height: 95vh;
+    overflow-y: auto;
+    position: relative;
+}
+
+/* Hide modal overlays by default */
+.confirm-modal-overlay,
+.price-history-modal-overlay {
+    display: block;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0,0,0,0.5);
+    z-index: 1;
+} 

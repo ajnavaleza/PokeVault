@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deck Analysis - PokeVault</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎴</text></svg>">
+    
+    <!-- Firebase CDN -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+</head>
+<body>
+    <!-- Navigation Header -->
+    <nav class="nav-header">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <a href="index.html" class="nav-logo">🎴 PokeVault</a>
+            </div>
+            <div class="nav-menu">
+                <a href="portfolio.html" class="nav-link" id="nav-portfolio">Portfolio</a>
+                <a href="deck-analysis.html" class="nav-link active" id="nav-deck-analysis">Deck Analysis</a>
+            </div>
+            <div id="user-nav-info" class="user-nav-info"></div>
+        </div>
+    </nav>
+
+    <!-- Main Application Container -->
+    <div class="container">
+
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">Deck Builder</h2>
+                    <p class="card-description">Build and analyze competitive Pokemon decks</p>
+                </div>
+                <div class="card-content">
+                    <div class="deck-builder">
+                        <div class="deck-input">
+                            <input type="text" id="deckName" class="input" placeholder="Enter deck name">
+                            <button id="createDeckBtn" class="btn btn-primary">Create New Deck</button>
+                        </div>
+                        <div id="deckList" class="deck-list">
+                            <div class="empty-state">
+                                <h3>No decks created yet</h3>
+                                <p>Create your first deck to start building!</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Deck Composition Visualization -->
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">Deck Composition</h2>
+                    <p class="card-description">Breakdown of your deck by card type (Filler Data)</p>
+                </div>
+                <div class="card-content">
+                    <div class="chart-container">
+                        <canvas id="deckCompositionChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Meta Trends -->
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">Meta Trends</h2>
+                    <p class="card-description">Top decks and usage rates (Filler Data)</p>
+                </div>
+                <div class="card-content">
+                    <ul>
+                        <li><strong>Lost Box:</strong> 18% usage</li>
+                        <li><strong>Lugia VSTAR:</strong> 15% usage</li>
+                        <li><strong>Mew VMAX:</strong> 12% usage</li>
+                        <li><strong>Gardevoir ex:</strong> 10% usage</li>
+                        <li><strong>Charizard ex:</strong> 8% usage</li>
+                        <li>Other decks: 37%</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Price Fluctuations -->
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">Price Fluctuations</h2>
+                    <p class="card-description">Track price changes for your deck over time (Filler Data)</p>
+                </div>
+                <div class="card-content">
+                    <div class="chart-container">
+                        <canvas id="priceFluctuationChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Win-Rate Histogram -->
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">Win-Rate Histogram</h2>
+                    <p class="card-description">Distribution of win rates for top decks (Filler Data)</p>
+                </div>
+                <div class="card-content">
+                    <div class="chart-container">
+                        <canvas id="winRateHistogram"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Matchup Simulations -->
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">Matchup Simulations</h2>
+                    <p class="card-description">Simulated win rates vs. top meta decks (Filler Data)</p>
+                </div>
+                <div class="card-content">
+                    <table class="table" style="width:100%; text-align:center;">
+                        <thead>
+                            <tr>
+                                <th>Deck</th>
+                                <th>Lost Box</th>
+                                <th>Lugia VSTAR</th>
+                                <th>Mew VMAX</th>
+                                <th>Gardevoir ex</th>
+                                <th>Charizard ex</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Your Deck</td>
+                                <td>52%</td>
+                                <td>48%</td>
+                                <td>55%</td>
+                                <td>50%</td>
+                                <td>47%</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- ROI Projections -->
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">ROI Projections</h2>
+                    <p class="card-description">Projected return on investment for your deck (Filler Data)</p>
+                </div>
+                <div class="card-content">
+                    <div class="chart-container">
+                        <canvas id="roiProjectionChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toast-container"></div>
+
+    <!-- Chart.js for analytics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Firebase and App Scripts -->
+    <script>
+        // Firebase configuration embedded to avoid 404 issues during deployment
+        const firebaseConfig = {
+            apiKey: "AIzaSyDmvOCKFMo_o07v0ETJHLbnd_gwq_xGuPc",
+            authDomain: "pokevault-fcd5b.firebaseapp.com",
+            projectId: "pokevault-fcd5b",
+            storageBucket: "pokevault-fcd5b.firebasestorage.app",
+            messagingSenderId: "958336599160",
+            appId: "1:958336599160:web:73e1872c62b600341e198d"
+        };
+
+        // Initialize Firebase function
+        let app = null;
+        let auth = null;
+        let db = null;
+
+        function initializeFirebase() {
+            app = firebase.initializeApp(firebaseConfig);
+            auth = firebase.auth();
+            db = firebase.firestore();
+            console.log('Firebase initialized successfully');
+            return { app, auth, db };
+        }
+
+        // Export for global access
+        window.firebaseConfig = firebaseConfig;
+        window.initializeFirebase = initializeFirebase;
+    </script>
+    <script src="js/auth.js"></script>
+    <script src="js/deck-analysis.js"></script>
+    
+    <script>
+        // Check authentication on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Wait for Firebase auth state to be determined
+            authManager.onAuthStateChange((user, token) => {
+                if (!user) {
+                    // Not authenticated, redirect to landing page
+                    window.location.href = 'index.html';
+                } else {
+                    // Authenticated, set active nav link
+                    authManager.setActiveNavLink('deck-analysis');
+                }
+            });
+        });
+    </script>
+
+    <script>
+    // Filler data for charts
+    function renderDeckAnalysisCharts() {
+        // Deck Composition Pie Chart
+        new Chart(document.getElementById('deckCompositionChart'), {
+            type: 'pie',
+            data: {
+                labels: ['Pokémon', 'Trainers', 'Energy'],
+                datasets: [{
+                    data: [24, 20, 16],
+                    backgroundColor: ['#4c51bf', '#f6ad55', '#48bb78']
+                }]
+            },
+            options: {responsive: true, plugins: {legend: {position: 'bottom'}}}
+        });
+
+        // Price Fluctuation Line Chart
+        new Chart(document.getElementById('priceFluctuationChart'), {
+            type: 'line',
+            data: {
+                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul'],
+                datasets: [{
+                    label: 'Deck Value ($)',
+                    data: [120, 130, 125, 140, 135, 150, 145],
+                    borderColor: '#4c51bf',
+                    backgroundColor: 'rgba(76,81,191,0.1)',
+                    fill: true
+                }]
+            },
+            options: {responsive: true}
+        });
+
+        // Win-Rate Histogram
+        new Chart(document.getElementById('winRateHistogram'), {
+            type: 'bar',
+            data: {
+                labels: ['40-50%', '50-60%', '60-70%', '70-80%', '80-90%'],
+                datasets: [{
+                    label: 'Decks',
+                    data: [2, 5, 8, 3, 1],
+                    backgroundColor: '#f6ad55'
+                }]
+            },
+            options: {responsive: true}
+        });
+
+        // ROI Projection Line Chart
+        new Chart(document.getElementById('roiProjectionChart'), {
+            type: 'line',
+            data: {
+                labels: ['Now', '+1 Month', '+3 Months', '+6 Months'],
+                datasets: [{
+                    label: 'Projected ROI (%)',
+                    data: [0, 5, 12, 20],
+                    borderColor: '#48bb78',
+                    backgroundColor: 'rgba(72,187,120,0.1)',
+                    fill: true
+                }]
+            },
+            options: {responsive: true}
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', renderDeckAnalysisCharts);
+    </script>
+</body>
+</html> 

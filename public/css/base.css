@@ -1,0 +1,96 @@
+/* ==================== BASE STYLES ==================== */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: #f8f9fa;
+    min-height: 100vh;
+    color: #333;
+    font-size: 18px;
+    line-height: 1.7;
+}
+
+/* ==================== UTILITY CLASSES ==================== */
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+    padding-top: 90px;
+}
+
+.loading, .updating {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.error {
+    color: #c53030;
+    background: #fed7d7;
+    border: 1px solid #feb2b2;
+    padding: 12px;
+    border-radius: 8px;
+    margin: 10px 0;
+}
+
+.success {
+    color: #2f855a;
+    background: #c6f6d5;
+    border: 1px solid #9ae6b4;
+    padding: 12px;
+    border-radius: 8px;
+    margin: 10px 0;
+}
+
+/* ==================== RESPONSIVE BREAKPOINTS ==================== */
+
+@media (max-width: 768px) {
+    .container { padding: 15px; padding-top: 80px; }
+}
+@media (max-width: 480px) {
+    .container { padding: 10px; padding-top: 70px; }
+}
+
+.skip-link {
+    position: absolute;
+    left: -999px;
+    top: 10px;
+    background: #222;
+    color: #fff;
+    padding: 0.5em 1em;
+    z-index: 1000;
+    border-radius: 4px;
+    font-weight: bold;
+    transition: left 0.2s;
+}
+.skip-link:focus {
+    left: 10px;
+    outline: 2px solid #4c51bf;
+}
+
+button, .btn {
+    font-size: 1.1rem;
+    line-height: 1.5;
+    outline: none;
+}
+button:focus, .btn:focus {
+    outline: 3px solid #4c51bf;
+    outline-offset: 2px;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    color: #222;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+p, li {
+    color: #333;
+    font-size: 1.05em;
+    line-height: 1.7;
+} 

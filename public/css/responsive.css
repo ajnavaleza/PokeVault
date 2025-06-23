@@ -1,0 +1,333 @@
+/* ==================== RESPONSIVE UTILITIES ==================== */
+
+/* Responsive Grid Utilities */
+.grid-responsive {
+    display: grid;
+    gap: 1rem;
+}
+
+.grid-responsive-1 {
+    grid-template-columns: 1fr;
+}
+
+.grid-responsive-2 {
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+}
+
+.grid-responsive-3 {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
+
+.grid-responsive-4 {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+}
+
+/* Responsive Text Utilities */
+.text-responsive-sm {
+    font-size: 0.875rem;
+}
+
+.text-responsive-md {
+    font-size: 1rem;
+}
+
+.text-responsive-lg {
+    font-size: 1.125rem;
+}
+
+.text-responsive-xl {
+    font-size: 1.25rem;
+}
+
+.text-responsive-2xl {
+    font-size: 1.5rem;
+}
+
+.text-responsive-3xl {
+    font-size: 1.875rem;
+}
+
+.text-responsive-4xl {
+    font-size: 2.25rem;
+}
+
+/* Responsive Spacing Utilities */
+.p-responsive-sm {
+    padding: 0.5rem;
+}
+
+.p-responsive-md {
+    padding: 1rem;
+}
+
+.p-responsive-lg {
+    padding: 1.5rem;
+}
+
+.p-responsive-xl {
+    padding: 2rem;
+}
+
+.m-responsive-sm {
+    margin: 0.5rem;
+}
+
+.m-responsive-md {
+    margin: 1rem;
+}
+
+.m-responsive-lg {
+    margin: 1.5rem;
+}
+
+.m-responsive-xl {
+    margin: 2rem;
+}
+
+/* Responsive Display Utilities */
+.hidden-mobile {
+    display: block;
+}
+
+.visible-mobile {
+    display: none;
+}
+
+.hidden-tablet {
+    display: block;
+}
+
+.visible-tablet {
+    display: none;
+}
+
+/* Responsive Flex Utilities */
+.flex-responsive {
+    display: flex;
+}
+
+.flex-responsive-col {
+    flex-direction: column;
+}
+
+.flex-responsive-row {
+    flex-direction: row;
+}
+
+.flex-responsive-wrap {
+    flex-wrap: wrap;
+}
+
+.flex-responsive-nowrap {
+    flex-wrap: nowrap;
+}
+
+/* Responsive Container */
+.container-responsive {
+    width: 100%;
+    margin: 0 auto;
+    padding: 0 1rem;
+}
+
+/* Tablet Breakpoint */
+@media (max-width: 768px) {
+    .grid-responsive-2 {
+        grid-template-columns: 1fr;
+    }
+    
+    .grid-responsive-3 {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .grid-responsive-4 {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .text-responsive-4xl {
+        font-size: 2rem;
+    }
+    
+    .text-responsive-3xl {
+        font-size: 1.75rem;
+    }
+    
+    .text-responsive-2xl {
+        font-size: 1.375rem;
+    }
+    
+    .p-responsive-xl {
+        padding: 1.5rem;
+    }
+    
+    .m-responsive-xl {
+        margin: 1.5rem;
+    }
+    
+    .hidden-tablet {
+        display: none;
+    }
+    
+    .visible-tablet {
+        display: block;
+    }
+    
+    .flex-responsive-row {
+        flex-direction: column;
+    }
+    
+    .container-responsive {
+        padding: 0 0.75rem;
+    }
+}
+
+/* Mobile Breakpoint */
+@media (max-width: 480px) {
+    .grid-responsive-3 {
+        grid-template-columns: 1fr;
+    }
+    
+    .grid-responsive-4 {
+        grid-template-columns: 1fr;
+    }
+    
+    .text-responsive-3xl {
+        font-size: 1.5rem;
+    }
+    
+    .text-responsive-2xl {
+        font-size: 1.25rem;
+    }
+    
+    .text-responsive-xl {
+        font-size: 1.125rem;
+    }
+    
+    .p-responsive-lg {
+        padding: 1rem;
+    }
+    
+    .p-responsive-xl {
+        padding: 1.25rem;
+    }
+    
+    .m-responsive-lg {
+        margin: 1rem;
+    }
+    
+    .m-responsive-xl {
+        margin: 1.25rem;
+    }
+    
+    .hidden-mobile {
+        display: none;
+    }
+    
+    .visible-mobile {
+        display: block;
+    }
+    
+    .container-responsive {
+        padding: 0 0.5rem;
+    }
+}
+
+/* Large Screen Breakpoint */
+@media (min-width: 1024px) {
+    .container-responsive {
+        max-width: 1024px;
+    }
+    
+    .text-responsive-4xl {
+        font-size: 3rem;
+    }
+    
+    .text-responsive-3xl {
+        font-size: 2.25rem;
+    }
+}
+
+/* Extra Large Screen Breakpoint */
+@media (min-width: 1280px) {
+    .container-responsive {
+        max-width: 1280px;
+    }
+    
+    .text-responsive-4xl {
+        font-size: 3.75rem;
+    }
+    
+    .text-responsive-3xl {
+        font-size: 3rem;
+    }
+}
+
+/* Landscape Mobile */
+@media (max-width: 768px) and (orientation: landscape) {
+    .container-responsive {
+        padding: 0 1rem;
+    }
+    
+    .p-responsive-lg {
+        padding: 1rem;
+    }
+    
+    .m-responsive-lg {
+        margin: 1rem;
+    }
+}
+
+/* High DPI Displays */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+    .card-image img,
+    .search-result-image img,
+    .modal-image {
+        image-rendering: -webkit-optimize-contrast;
+        image-rendering: crisp-edges;
+    }
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+    
+    .floating-card {
+        animation: none;
+    }
+    
+    .btn:hover,
+    .card:hover,
+    .feature-card:hover {
+        transform: none;
+    }
+}
+
+/* Dark Mode Support (Future) */
+@media (prefers-color-scheme: dark) {
+    /* Dark mode styles can be added here */
+}
+
+/* Print Styles */
+@media print {
+    .nav-header,
+    .modal,
+    .btn,
+    .search-results {
+        display: none !important;
+    }
+    
+    body {
+        background: white !important;
+        color: black !important;
+    }
+    
+    .card-item {
+        break-inside: avoid;
+        page-break-inside: avoid;
+    }
+} 

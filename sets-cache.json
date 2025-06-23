@@ -53,20 +53,20 @@
       "name": "Paldea Evolved"
     },
     {
-      "id": "sve",
-      "name": "Scarlet & Violet Energies"
-    },
-    {
       "id": "sv1",
       "name": "Scarlet & Violet"
     },
     {
-      "id": "swsh12pt5",
-      "name": "Crown Zenith"
+      "id": "sve",
+      "name": "Scarlet & Violet Energies"
     },
     {
       "id": "swsh12pt5gg",
       "name": "Crown Zenith Galarian Gallery"
+    },
+    {
+      "id": "swsh12pt5",
+      "name": "Crown Zenith"
     },
     {
       "id": "svp",
@@ -105,24 +105,24 @@
       "name": "Astral Radiance Trainer Gallery"
     },
     {
-      "id": "swsh9tg",
-      "name": "Brilliant Stars Trainer Gallery"
-    },
-    {
       "id": "swsh9",
       "name": "Brilliant Stars"
+    },
+    {
+      "id": "swsh9tg",
+      "name": "Brilliant Stars Trainer Gallery"
     },
     {
       "id": "swsh8",
       "name": "Fusion Strike"
     },
     {
-      "id": "cel25c",
-      "name": "Celebrations: Classic Collection"
-    },
-    {
       "id": "cel25",
       "name": "Celebrations"
+    },
+    {
+      "id": "cel25c",
+      "name": "Celebrations: Classic Collection"
     },
     {
       "id": "swsh7",
@@ -517,12 +517,12 @@
       "name": "POP Series 3"
     },
     {
-      "id": "tk2b",
-      "name": "EX Trainer Kit 2 Minun"
-    },
-    {
       "id": "tk2a",
       "name": "EX Trainer Kit 2 Plusle"
+    },
+    {
+      "id": "tk2b",
+      "name": "EX Trainer Kit 2 Minun"
     },
     {
       "id": "ex12",
@@ -665,5 +665,5 @@
       "name": "Base"
     }
   ],
-  "timestamp": 1749412241395
+  "timestamp": 1750691186935
 }

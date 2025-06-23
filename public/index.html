@@ -13,218 +13,138 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 </head>
 <body>
-    <!-- Authentication Container -->
-     <!--fs-->
-    <div id="auth-container" class="auth-container">
-        <div class="auth-wrapper">
-            <div class="auth-header">
-                <h1>🎴 PokeVault</h1>
-                <p>Your Pokemon card portfolio tracker</p>
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+    <!-- Landing Page -->
+    <main id="main-content" class="landing-container" role="main" aria-label="PokeVault Landing Page">
+        <!-- Hero Section -->
+        <section class="hero-section" aria-labelledby="hero-title">
+            <div class="hero-content">
+                <div class="hero-text fade-in">
+                    <h1 id="hero-title" class="hero-title">
+                        <span class="hero-icon" aria-hidden="true" role="img">🎴</span>
+                        <span>PokeVault</span>
+                    </h1>
+                    <p class="hero-subtitle">Track Your Pokemon Card Collection</p>
+                    <p class="hero-description">
+                        Monitor your Pokemon card portfolio with real-time pricing, 
+                        track market trends, and analyze your collection's performance 
+                        with professional-grade tools.
+                    </p>
+                    <button id="get-started-btn" class="btn btn-primary btn-lg cta-button scale-in" aria-label="Get Started with PokeVault">
+                        Get Started
+                    </button>
+                </div>
+                <div class="hero-visual slide-up" aria-hidden="true">
+                    <div class="card-stack">
+                        <div class="floating-card card-1" aria-label="Fire type card" role="img">🔥</div>
+                        <div class="floating-card card-2" aria-label="Electric type card" role="img">⚡</div>
+                        <div class="floating-card card-3" aria-label="Water type card" role="img">💧</div>
+                        <div class="floating-card card-4" aria-label="Grass type card" role="img">🌿</div>
+                    </div>
+                </div>
             </div>
+        </section>
 
-            <div class="auth-tabs">
-                <button class="auth-tab active" onclick="showLogin()">Login</button>
-                <button class="auth-tab" onclick="showRegister()">Register</button>
+        <!-- Features Section -->
+        <section class="features-section" aria-labelledby="features-title">
+            <div class="features-content">
+                <h2 id="features-title" class="section-title fade-in">Why Choose PokeVault?</h2>
+                <div class="features-grid">
+                    <div class="feature-card card scale-in" tabindex="0" aria-label="Real-Time Pricing">
+                        <span class="feature-icon" aria-hidden="true" role="img">📊</span>
+                        <h3>Real-Time Pricing</h3>
+                        <p>Get live market prices from multiple sources to ensure accurate portfolio valuation</p>
+                    </div>
+                    <div class="feature-card card scale-in" tabindex="0" aria-label="Portfolio Analytics">
+                        <span class="feature-icon" aria-hidden="true" role="img">📈</span>
+                        <h3>Portfolio Analytics</h3>
+                        <p>Track performance over time with detailed charts and market trend analysis</p>
+                    </div>
+                    <div class="feature-card card scale-in" tabindex="0" aria-label="Smart Search">
+                        <span class="feature-icon" aria-hidden="true" role="img">🔍</span>
+                        <h3>Smart Search</h3>
+                        <p>Find any Pokemon card instantly with our intelligent search and auto-complete</p>
+                    </div>
+                    <div class="feature-card card scale-in" tabindex="0" aria-label="Secure Storage">
+                        <span class="feature-icon" aria-hidden="true" role="img">🛡️</span>
+                        <h3>Secure Storage</h3>
+                        <p>Your collection data is safely stored with enterprise-grade security</p>
+                    </div>
+                    <div class="feature-card card scale-in" tabindex="0" aria-label="Mobile Ready">
+                        <span class="feature-icon" aria-hidden="true" role="img">📱</span>
+                        <h3>Mobile Ready</h3>
+                        <p>Access your portfolio anywhere with our responsive design</p>
+                    </div>
+                    <div class="feature-card card scale-in" tabindex="0" aria-label="Lightning Fast">
+                        <span class="feature-icon" aria-hidden="true" role="img">🚀</span>
+                        <h3>Lightning Fast</h3>
+                        <p>Optimized performance ensures smooth experience even with large collections</p>
+                    </div>
+                </div>
             </div>
+        </section>
+    </main>
 
-            <!-- Login Form -->
-            <form id="login-form" class="auth-form">
-                <h3>Welcome Back!</h3>
-                <input type="email" id="login-email" placeholder="Email" required>
-                <input type="password" id="login-password" placeholder="Password" required>
-                <button type="submit" class="auth-btn">Login</button>
-            </form>
-
-            <!-- Register Form -->
-            <form id="register-form" class="auth-form" style="display: none;">
-                <h3>Create Account</h3>
-                <input type="email" id="register-email" placeholder="Email" required>
-                <input type="password" id="register-password" placeholder="Password (min 6 characters)" required minlength="6">
-                <button type="submit" class="auth-btn">Create Account</button>
-            </form>
-
-            <div class="auth-divider">
-                <span>OR</span>
-            </div>
-
-            <button id="google-signin-btn" class="google-signin-btn">
-                <svg width="18" height="18" viewBox="0 0 18 18">
-                    <path fill="#4285F4" d="M16.51 8H8.98v3h4.3c-.18 1-.74 1.48-1.6 2.04v2.01h2.6a7.8 7.8 0 0 0 2.38-5.88c0-.57-.05-.66-.15-1.18z"/>
-                    <path fill="#34A853" d="M8.98 17c2.16 0 3.97-.72 5.3-1.94l-2.6-2.04a4.8 4.8 0 0 1-7.18-2.53H1.83v2.07A8 8 0 0 0 8.98 17z"/>
-                    <path fill="#FBBC05" d="M4.5 10.49a4.8 4.8 0 0 1 0-3.07V5.35H1.83a8 8 0 0 0 0 7.22l2.67-2.08z"/>
-                    <path fill="#EA4335" d="M8.98 3.54c1.17 0 2.23.4 3.06 1.2l2.3-2.3A8 8 0 0 0 1.83 5.35L4.5 7.42a4.77 4.77 0 0 1 4.48-3.88z"/>
-                </svg>
-                Continue with Google
-            </button>
-        </div>
-    </div>
-
-    <!-- Main Application Container -->
-    <div id="main-app" class="container" style="display: none;">
-        <div class="header">
-            <div class="header-content">
-                <div class="header-title">
+    <!-- Auth Section (moved outside landing-page) -->
+    <section id="auth-section" class="auth-section" style="display: none;">
+        <div class="auth-container">
+            <div class="auth-wrapper card scale-in">
+                <div class="auth-header">
                     <h1>🎴 PokeVault</h1>
-                    <p>Track your Pokemon card collection and watch your portfolio grow!</p>
+                    <p>Your Pokemon card portfolio tracker</p>
                 </div>
-                <div id="user-info" class="user-info"></div>
-            </div>
-        </div>
 
-        <div class="add-card-form">
-            <h3>Add New Card</h3>
-            
-            <!-- Card Search Section -->
-            <div class="card-search-container">
-                <input type="text" id="cardSearch" placeholder="🔍 Search for a Pokemon card (e.g., Charizard, Pikachu...)" autocomplete="off">
-                <div id="searchResults" class="search-results"></div>
-            </div>
-            
-            <div class="form-divider">
-                <br>
-                <span>OR enter details manually:</span>
-            </div>
-            
-            <form id="addCardForm">
-                <div class="form-row">
-                    <input type="text" id="cardName" placeholder="Card Name (e.g., Charizard)" required>
-                    <select id="cardSet" required>
-                        <option value="">Loading sets...</option>
-                    </select>
-                    <div class="card-number-input">
-                        <input type="text" id="cardNumber" placeholder="Card # (e.g., 25/102)" maxlength="20" required>
-                        <small class="input-help">Examples: 25/102, TG20, SV001/SV198, V001</small>
-                    </div>
-                    <input type="number" id="quantity" placeholder="Qty" min="1" value="1" required>
-                    <button type="submit">Add Card</button>
+                <div class="auth-tabs">
+                    <button class="auth-tab active btn btn-ghost" onclick="showLogin()">Login</button>
+                    <button class="auth-tab btn btn-ghost" onclick="showRegister()">Register</button>
                 </div>
-            </form>
-            <div class="form-actions">
-                <button type="button" onclick="clearSearch()" class="clear-btn">Clear Form</button>
-            </div>
-            <div id="addCardStatus"></div>
-        </div>
 
-        <div class="portfolio">
-            <div class="portfolio-header">
-                <h2>Your Pokemon Card Portfolio</h2>
-                <div class="portfolio-stats">
-                    <div class="stat-card">
-                        <div class="stat-value" id="totalCards">0</div>
-                        <div>Total Cards</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-value" id="uniqueCards">0</div>
-                        <div>Unique Cards</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-value" id="totalValue">$0.00</div>
-                        <div>Portfolio Value</div>
-                    </div>
-                    <div class="stat-card">
-                        <button onclick="updateAllPrices()" id="updateBtn" class="update-prices-btn">
-                            🔄 Update Prices
-                        </button>
-                    </div>
+                <!-- Login Form -->
+                <form id="login-form" class="auth-form">
+                    <h3>Welcome Back!</h3>
+                    <input type="email" id="login-email" class="input" placeholder="Email" required>
+                    <input type="password" id="login-password" class="input" placeholder="Password" required>
+                    <button type="submit" class="btn btn-primary auth-btn">Login</button>
+                </form>
+
+                <!-- Register Form -->
+                <form id="register-form" class="auth-form" style="display: none;">
+                    <h3>Create Account</h3>
+                    <input type="email" id="register-email" class="input" placeholder="Email" required>
+                    <input type="password" id="register-password" class="input" placeholder="Password (min 6 characters)" required minlength="6">
+                    <button type="submit" class="btn btn-primary auth-btn">Create Account</button>
+                </form>
+
+                <div class="auth-divider">
+                    <span>OR</span>
                 </div>
-            </div>
-            <div id="cardsContainer" class="cards-grid">
-                <div class="empty-state">
-                    <h3>No cards in your portfolio yet</h3>
-                    <p>Add your first Pokemon card above to start tracking your collection!</p>
-                </div>
-            </div>
-        </div>
-    </div>
 
-    <!-- Image Modal -->
-    <div id="imageModal" class="image-modal">
-        <div class="modal-content">
-            <button class="modal-close" onclick="closeImageModal()">&times;</button>
-            <button class="modal-nav modal-nav-prev" onclick="navigateModal(-1)" title="Previous card">&#8249;</button>
-            <button class="modal-nav modal-nav-next" onclick="navigateModal(1)" title="Next card">&#8250;</button>
-            <img id="modalImage" class="modal-image" src="" alt="">
-            <div id="modalInfo" class="modal-info">
-                <h3 id="modalTitle"></h3>
-                <p id="modalDetails"></p>
-                <div id="modalCounter" class="modal-counter"></div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Confirmation Modal -->
-    <div id="confirmModal" class="confirm-modal">
-        <div class="confirm-modal-overlay"></div>
-        <div class="confirm-modal-content">
-            <div class="confirm-modal-header">
-                <div class="confirm-modal-icon">
-                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="12" cy="12" r="10"></circle>
-                        <line x1="15" y1="9" x2="9" y2="15"></line>
-                        <line x1="9" y1="9" x2="15" y2="15"></line>
+                <button id="google-signin-btn" class="btn btn-outline google-signin-btn">
+                    <svg width="18" height="18" viewBox="0 0 18 18">
+                        <path fill="#4285F4" d="M16.51 8H8.98v3h4.3c-.18 1-.74 1.48-1.6 2.04v2.01h2.6a7.8 7.8 0 0 0 2.38-5.88c0-.57-.05-.66-.15-1.18z"/>
+                        <path fill="#34A853" d="M8.98 17c2.16 0 3.97-.72 5.3-1.94l-2.6-2.04a4.8 4.8 0 0 1-7.18-2.53H1.83v2.07A8 8 0 0 0 8.98 17z"/>
+                        <path fill="#FBBC05" d="M4.5 10.49a4.8 4.8 0 0 1 0-3.07V5.35H1.83a8 8 0 0 0 0 7.22l2.67-2.08z"/>
+                        <path fill="#EA4335" d="M8.98 3.54c1.17 0 2.23.4 3.06 1.2l2.3-2.3A8 8 0 0 0 1.83 5.35L4.5 7.42a4.77 4.77 0 0 1 4.48-3.88z"/>
                     </svg>
-                </div>
-                <h3 id="confirmTitle">Remove Card</h3>
-            </div>
-            <div class="confirm-modal-body">
-                <p id="confirmMessage">Are you sure you want to remove this card from your portfolio?</p>
-                <div id="confirmCardPreview" class="confirm-card-preview"></div>
-            </div>
-            <div class="confirm-modal-actions">
-                <button id="confirmCancel" class="confirm-btn confirm-btn-cancel">Cancel</button>
-                <button id="confirmDelete" class="confirm-btn confirm-btn-delete">Remove Card</button>
+                    Continue with Google
+                </button>
             </div>
         </div>
-    </div>
+    </section>
 
-    <!-- Price History Modal -->
-    <div id="priceHistoryModal" class="price-history-modal">
-        <div class="price-history-modal-overlay"></div>
-        <div class="price-history-modal-content">
-            <div class="price-history-modal-header">
-                <button class="price-history-close" onclick="closePriceHistoryModal()">&times;</button>
-                <div class="price-history-card-info">
-                    <img id="priceHistoryCardImage" src="" alt="" class="price-history-card-image">
-                    <div>
-                        <h3 id="priceHistoryCardName">Card Name</h3>
-                        <p id="priceHistoryCardDetails">Set Name #000</p>
-                    </div>
-                </div>
+    <!-- Navigation Header -->
+    <nav id="nav-header" class="nav-header" style="display: none;">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <a href="index.html" class="nav-logo">🎴 PokeVault</a>
             </div>
-            <div class="price-history-modal-body">
-                <div class="price-history-stats">
-                    <div class="price-stat">
-                        <span class="price-stat-label">Current Price</span>
-                        <span class="price-stat-value" id="currentPriceValue">$0.00</span>
-                    </div>
-                    <div class="price-stat">
-                        <span class="price-stat-label">30-Day High</span>
-                        <span class="price-stat-value" id="highPriceValue">$0.00</span>
-                    </div>
-                    <div class="price-stat">
-                        <span class="price-stat-label">30-Day Low</span>
-                        <span class="price-stat-value" id="lowPriceValue">$0.00</span>
-                    </div>
-                    <div class="price-stat">
-                        <span class="price-stat-label">Price Change</span>
-                        <span class="price-stat-value" id="priceChangeValue">+$0.00 (0%)</span>
-                    </div>
-                </div>
-                <div class="price-chart-container">
-                    <canvas id="priceHistoryChart"></canvas>
-                </div>
-                <div id="priceHistoryLoading" class="price-history-loading">
-                    <p>Loading price history...</p>
-                </div>
-                <div id="priceHistoryError" class="price-history-error" style="display: none;">
-                    <p>No price history available for this card.</p>
-                </div>
+            <div class="nav-menu">
+                <a href="portfolio.html" class="nav-link" id="nav-portfolio">Portfolio</a>
+                <a href="deck-analysis.html" class="nav-link" id="nav-deck-analysis">Deck Analysis</a>
             </div>
+            <div id="user-nav-info" class="user-nav-info"></div>
         </div>
-    </div>
-
-    <!-- Chart.js for price history graphs -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    </nav>
 
     <!-- Firebase and App Scripts -->
     <script>
@@ -256,7 +176,6 @@
         window.initializeFirebase = initializeFirebase;
     </script>
     <script src="js/auth.js"></script>
-    <script src="js/app.js"></script>
     
     <script>
         // Authentication tab switching
@@ -273,6 +192,28 @@
             document.querySelectorAll('.auth-tab').forEach(tab => tab.classList.remove('active'));
             event.target.classList.add('active');
         }
+
+        // Landing page interactions
+        document.getElementById('get-started-btn').addEventListener('click', function() {
+            document.getElementById('main-content').style.display = 'none';
+            document.getElementById('auth-section').style.display = 'block';
+        });
+
+        // Add animation classes on scroll
+        function animateOnScroll() {
+            const elements = document.querySelectorAll('.feature-card, .hero-text, .hero-visual');
+            elements.forEach(element => {
+                const elementTop = element.getBoundingClientRect().top;
+                const elementVisible = 150;
+                
+                if (elementTop < window.innerHeight - elementVisible) {
+                    element.classList.add('fade-in');
+                }
+            });
+        }
+
+        window.addEventListener('scroll', animateOnScroll);
+        animateOnScroll(); // Run once on load
     </script>
 </body>
 </html> 

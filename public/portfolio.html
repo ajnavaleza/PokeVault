@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portfolio - PokeVault</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎴</text></svg>">
+    
+    <!-- Firebase CDN -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+</head>
+<body>
+    <!-- Navigation Header -->
+    <nav id="nav-header" class="nav-header">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <a href="index.html" class="nav-logo">🎴 PokeVault</a>
+            </div>
+            <div class="nav-menu">
+                <a href="portfolio.html" class="nav-link active" id="nav-portfolio">Portfolio</a>
+                <a href="deck-analysis.html" class="nav-link" id="nav-deck-analysis">Deck Analysis</a>
+            </div>
+            <div id="user-nav-info" class="user-nav-info"></div>
+        </div>
+    </nav>
+
+    <!-- Main Application Container -->
+    <div id="main-app" class="container">
+        <div class="add-card-form card">
+            <h3>Add New Card</h3>
+            
+            <!-- Card Search Section -->
+            <div class="card-search-container">
+                <input type="text" id="cardSearch" class="input" placeholder="🔍 Search for a Pokemon card (e.g., Charizard, Pikachu...)" autocomplete="off">
+                <div id="searchResults" class="search-results"></div>
+            </div>
+            
+            <div class="form-divider">
+                <span>OR enter details manually:</span>
+            </div>
+            
+            <form id="addCardForm">
+                <div class="form-row">
+                    <input type="text" id="cardName" class="input" placeholder="Card Name (e.g., Charizard)" required>
+                    <select id="cardSet" class="input" required>
+                        <option value="">Loading sets...</option>
+                    </select>
+                    <div class="card-number-input">
+                        <input type="text" id="cardNumber" class="input" placeholder="Card # (e.g., 25/102)" maxlength="20" required>
+                        <small class="input-help">Examples: 25/102, TG20, SV001/SV198, V001</small>
+                    </div>
+                    <input type="number" id="quantity" class="input" placeholder="Qty" min="1" value="1" required>
+                    <button type="submit" class="btn btn-primary">Add Card</button>
+                </div>
+            </form>
+            <div class="form-actions">
+                <button type="button" onclick="clearSearch()" class="btn btn-secondary clear-btn">Clear Form</button>
+            </div>
+            <div id="addCardStatus"></div>
+        </div>
+
+        <div class="portfolio card">
+            <div class="portfolio-header">
+                <h2>Your Pokemon Card Portfolio</h2>
+                <div class="portfolio-stats">
+                    <div class="stat-card card">
+                        <div class="stat-value" id="totalCards">0</div>
+                        <div>Total Cards</div>
+                    </div>
+                    <div class="stat-card card">
+                        <div class="stat-value" id="uniqueCards">0</div>
+                        <div>Unique Cards</div>
+                    </div>
+                    <div class="stat-card card">
+                        <div class="stat-value" id="totalValue">$0.00</div>
+                        <div>Portfolio Value</div>
+                    </div>
+                    <div class="stat-card">
+                        <button onclick="updateAllPrices()" id="updateBtn" class="btn btn-primary update-prices-btn">
+                            <span class="spinner" id="updateSpinner" style="display: none;"></span>
+                            🔄 Update Prices
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div id="cardsContainer" class="cards-grid">
+                <div class="empty-state">
+                    <h3>No cards in your portfolio yet</h3>
+                    <p>Add your first Pokemon card above to start tracking your collection!</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Image Modal -->
+    <div id="imageModal" class="image-modal">
+        <div class="modal-content card">
+            <button class="modal-close btn btn-ghost" onclick="closeImageModal()">&times;</button>
+            <button class="modal-nav modal-nav-prev btn btn-ghost" onclick="navigateModal(-1)" title="Previous card">&#8249;</button>
+            <button class="modal-nav modal-nav-next btn btn-ghost" onclick="navigateModal(1)" title="Next card">&#8250;</button>
+            <img id="modalImage" class="modal-image" src="" alt="">
+            <div id="modalInfo" class="modal-info">
+                <h3 id="modalTitle"></h3>
+                <p id="modalDetails"></p>
+                <div id="modalCounter" class="modal-counter"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div id="confirmModal" class="confirm-modal">
+        <div class="confirm-modal-overlay"></div>
+        <div class="confirm-modal-content card">
+            <div class="confirm-modal-header">
+                <div class="confirm-modal-icon">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="15" y1="9" x2="9" y2="15"></line>
+                        <line x1="9" y1="9" x2="15" y2="15"></line>
+                    </svg>
+                </div>
+                <h3 id="confirmTitle">Remove Card</h3>
+            </div>
+            <div class="confirm-modal-body">
+                <p id="confirmMessage">Are you sure you want to remove this card from your portfolio?</p>
+                <div id="confirmCardPreview" class="confirm-card-preview"></div>
+            </div>
+            <div class="confirm-modal-actions">
+                <button id="confirmCancel" class="btn btn-secondary confirm-btn">Cancel</button>
+                <button id="confirmDelete" class="btn btn-destructive confirm-btn">Remove Card</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Price History Modal -->
+    <div id="priceHistoryModal" class="price-history-modal">
+        <div class="price-history-modal-overlay"></div>
+        <div class="price-history-modal-content card">
+            <div class="price-history-modal-header">
+                <button class="price-history-close btn btn-ghost" onclick="closePriceHistoryModal()">&times;</button>
+                <div class="price-history-card-info">
+                    <img id="priceHistoryCardImage" src="" alt="" class="price-history-card-image">
+                    <div>
+                        <h3 id="priceHistoryCardName">Card Name</h3>
+                        <p id="priceHistoryCardDetails">Set Name #000</p>
+                    </div>
+                </div>
+            </div>
+            <div class="price-history-modal-body">
+                <div class="price-history-stats">
+                    <div class="price-stat card">
+                        <span class="price-stat-label">Current Price</span>
+                        <span class="price-stat-value" id="currentPriceValue">$0.00</span>
+                    </div>
+                    <div class="price-stat card">
+                        <span class="price-stat-label">30-Day High</span>
+                        <span class="price-stat-value" id="highPriceValue">$0.00</span>
+                    </div>
+                    <div class="price-stat card">
+                        <span class="price-stat-label">30-Day Low</span>
+                        <span class="price-stat-value" id="lowPriceValue">$0.00</span>
+                    </div>
+                    <div class="price-stat card">
+                        <span class="price-stat-label">Price Change</span>
+                        <span class="price-stat-value" id="priceChangeValue">+$0.00 (0%)</span>
+                    </div>
+                </div>
+                <div class="price-chart-container">
+                    <canvas id="priceHistoryChart"></canvas>
+                </div>
+                <div id="priceHistoryLoading" class="price-history-loading">
+                    <div class="spinner"></div>
+                    <p>Loading price history...</p>
+                </div>
+                <div id="priceHistoryError" class="price-history-error" style="display: none;">
+                    <p>No price history available for this card.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toast-container"></div>
+
+    <!-- Chart.js for price history graphs -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Firebase and App Scripts -->
+    <script>
+        // Firebase configuration embedded to avoid 404 issues during deployment
+        const firebaseConfig = {
+            apiKey: "AIzaSyDmvOCKFMo_o07v0ETJHLbnd_gwq_xGuPc",
+            authDomain: "pokevault-fcd5b.firebaseapp.com",
+            projectId: "pokevault-fcd5b",
+            storageBucket: "pokevault-fcd5b.firebasestorage.app",
+            messagingSenderId: "958336599160",
+            appId: "1:958336599160:web:73e1872c62b600341e198d"
+        };
+
+        // Initialize Firebase function
+        let app = null;
+        let auth = null;
+        let db = null;
+
+        function initializeFirebase() {
+            app = firebase.initializeApp(firebaseConfig);
+            auth = firebase.auth();
+            db = firebase.firestore();
+            console.log('Firebase initialized successfully');
+            return { app, auth, db };
+        }
+
+        // Export for global access
+        window.firebaseConfig = firebaseConfig;
+        window.initializeFirebase = initializeFirebase;
+    </script>
+    <script src="js/auth.js"></script>
+    <script src="js/app.js"></script>
+    
+    <script>
+        // Check authentication on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Wait for Firebase auth state to be determined
+            authManager.onAuthStateChange((user, token) => {
+                if (!user) {
+                    // Not authenticated, redirect to landing page
+                    window.location.href = 'index.html';
+                } else {
+                    // Authenticated, set active nav link
+                    authManager.setActiveNavLink('portfolio');
+                }
+            });
+        });
+    </script>
+</body>
+</html> 
