@@ -184,6 +184,8 @@ button:disabled {
     transition: all 0.3s ease;
     box-shadow: 0 2px 10px rgba(0,0,0,0.05);
     margin-bottom: 0;
+    min-width: 0;
+    max-width: 100%;
 }
 
 .card-image {
@@ -245,6 +247,10 @@ button:disabled {
     display: flex;
     flex-direction: column;
     justify-content: center;
+    min-width: 0;
+    max-width: 100%;
+    overflow-x: auto;
+    word-break: break-word;
 }
 
 .card-name {
