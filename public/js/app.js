@@ -908,18 +908,12 @@ function updateModalContent() {
     if (!card) return;
     
     const modalImage = document.getElementById('modalImage');
-    const modalTitle = document.getElementById('modalTitle');
-    const modalDetails = document.getElementById('modalDetails');
-    const modalCounter = document.getElementById('modalCounter');
     const prevBtn = document.querySelector('.modal-nav-prev');
     const nextBtn = document.querySelector('.modal-nav-next');
     
     // Set image and info
     modalImage.src = card.imageUrl || '';
     modalImage.alt = card.name;
-    modalTitle.textContent = card.name;
-    modalDetails.textContent = `${getSetDisplayName(card.set)} #${card.displayNumber || card.number}`;
-    modalCounter.textContent = `${currentModalIndex + 1} of ${portfolio.length}`;
     
     // Update navigation button states
     prevBtn.disabled = currentModalIndex === 0;
