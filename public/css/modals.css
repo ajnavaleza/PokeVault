@@ -51,7 +51,12 @@
 
 /* Modal navigation and close button positioning for image modal */
 .modal-content {
-    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    max-height: 90vh;
+    overflow: hidden;
 }
 
 .modal-close {
@@ -138,6 +143,15 @@
     height: 300px !important;
     max-width: 100%;
     max-height: 300px;
+    display: block;
+    margin: 0 auto;
+}
+
+.modal-image {
+    max-height: 80vh;
+    width: auto;
+    height: auto;
+    object-fit: contain;
     display: block;
     margin: 0 auto;
 } 
