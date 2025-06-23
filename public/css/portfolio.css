@@ -279,7 +279,9 @@ button:disabled {
 }
 
 .price-info {
-    display: none !important;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #2d3748;
 }
 
 .current-price {
