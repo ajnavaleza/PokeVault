@@ -745,18 +745,15 @@ function handleContainerClick(event) {
     // Handle card image clicks
     const cardImage = event.target.closest('.card-image');
     if (cardImage) {
-        const imageUrl = cardImage.dataset.imageUrl;
-        const cardName = cardImage.dataset.cardName;
-        const cardDetails = cardImage.dataset.cardDetails;
-        
-        if (imageUrl && cardName && cardDetails) {
-            // Find the index of this card in the portfolio
-            const cardIndex = portfolio.findIndex(card => 
-                card.imageUrl === imageUrl && 
-                card.name === cardName
-            );
+        // Find the .card-item parent and its index in the cardsContainer
+        const cardItem = cardImage.closest('.card-item');
+        const cardsContainer = document.getElementById('cardsContainer');
+        const cardItems = Array.from(cardsContainer.getElementsByClassName('card-item'));
+        const cardIndex = cardItems.indexOf(cardItem);
+        if (cardIndex !== -1) {
             openImageModal(cardIndex);
         }
+        return;
     }
 }
 
@@ -785,13 +782,9 @@ function renderPortfolio() {
 
 function createCardHTML(card) {
     const imageHTML = card.imageUrl 
-        ? `<div class="card-image" 
-                data-image-url="${card.imageUrl}" 
-                data-card-name="${card.name}" 
-                data-card-details="${getSetDisplayName(card.set)} #${card.displayNumber || card.number}"
-                style="cursor: pointer;">
-             <img src="${card.imageUrl}" alt="${card.name}" onerror="this.parentElement.style.display='none'">
-           </div>`
+        ? `<div class="card-image" style="cursor: pointer;">
+            <img src="${card.imageUrl}" alt="${card.name}" onerror="this.parentElement.style.display='none'">
+        </div>`
         : `<div class="card-image-placeholder">
              <div class="placeholder-content"><span>🎴</span><small>No image</small></div>
            </div>`;
