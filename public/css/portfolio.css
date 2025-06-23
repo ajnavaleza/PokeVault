@@ -278,10 +278,21 @@ button:disabled {
     color: #4a5568;
 }
 
+/* Restore .price-info to its original display so price is clickable and price history modal works */
 .price-info {
-    font-size: 1.5rem;
-    font-weight: 700;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 18px;
+    padding: 15px;
+    background: #f7fafc;
+    border-radius: 10px;
+    box-shadow: 0 1px 4px rgba(44,62,80,0.04);
+    gap: 8px;
+    font-size: 1.1rem;
+    font-weight: 500;
     color: #2d3748;
+    width: 90%;
 }
 
 .current-price {
@@ -416,5 +427,6 @@ button:disabled {
     .price-info {
         width: 95%;
         padding: 14px 10px;
+        font-size: 1rem;
     }
 } 
