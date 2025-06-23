@@ -91,4 +91,38 @@
 }
 .modal-nav-next {
     right: 0;
+}
+
+.price-history-modal-content {
+    max-width: 600px;
+    width: 95vw;
+    max-height: 90vh;
+    overflow-y: auto;
+    margin: auto;
+    display: flex;
+    flex-direction: column;
+}
+
+.price-history-modal-body {
+    overflow-y: auto;
+    max-height: 50vh;
+}
+
+.price-chart-container {
+    width: 100%;
+    max-width: 550px;
+    margin: 0 auto;
+    background: #fff;
+    border-radius: 12px;
+    padding: 1rem 0.5rem;
+    box-sizing: border-box;
+}
+
+#priceHistoryChart {
+    width: 100% !important;
+    height: 300px !important;
+    max-width: 100%;
+    max-height: 300px;
+    display: block;
+    margin: 0 auto;
 } 
