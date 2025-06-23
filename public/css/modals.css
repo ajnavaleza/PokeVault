@@ -47,4 +47,48 @@
     height: 100vh;
     background: rgba(0,0,0,0.5);
     z-index: 1;
+}
+
+/* Modal navigation and close button positioning for image modal */
+.modal-content {
+    position: relative;
+}
+
+.modal-close {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    z-index: 10;
+    font-size: 2rem;
+    background: none;
+    border: none;
+    color: #333;
+    cursor: pointer;
+    padding: 0.5rem 1rem;
+    line-height: 1;
+}
+
+.modal-nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 10;
+    font-size: 2.5rem;
+    background: rgba(255,255,255,0.85);
+    border: none;
+    color: #333;
+    cursor: pointer;
+    padding: 0.5rem 1.2rem;
+    border-radius: 50%;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+    transition: background 0.2s;
+}
+.modal-nav:hover {
+    background: #e2e8f0;
+}
+.modal-nav-prev {
+    left: 0;
+}
+.modal-nav-next {
+    right: 0;
 } 
