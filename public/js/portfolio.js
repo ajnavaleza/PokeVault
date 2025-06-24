@@ -9,6 +9,7 @@ function handleContainerClick(event) {
     // Handle price clicks
     const priceElement = event.target.closest('.clickable-price');
     if (priceElement) {
+        event.stopPropagation(); // Prevent bubbling to card-image
         const cardId = priceElement.dataset.cardId;
         const cardName = priceElement.dataset.cardName;
         const cardImage = priceElement.dataset.cardImage;
