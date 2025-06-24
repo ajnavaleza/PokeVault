@@ -12,11 +12,10 @@ function handleContainerClick(event) {
         event.stopPropagation(); // Prevent bubbling to card-image
         const cardId = priceElement.dataset.cardId;
         const cardName = priceElement.dataset.cardName;
-        const cardImage = priceElement.dataset.cardImage;
         const cardDetails = priceElement.dataset.cardDetails;
         const currentPrice = parseFloat(priceElement.dataset.currentPrice);
         
-        showPriceHistory(cardId, cardName, cardImage, cardDetails, currentPrice);
+        showPriceHistory(cardId, cardName, '', cardDetails, currentPrice);
         return;
     }
 
