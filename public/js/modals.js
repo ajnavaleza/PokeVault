@@ -181,6 +181,9 @@ function closeConfirmModal() {
 /* ==================== PRICE HISTORY MODAL FUNCTIONS ==================== */
 
 async function showPriceHistory(cardId, cardName, cardImageUrl, cardDetails, currentPrice) {
+    // Close any other open modals
+    document.querySelectorAll('.image-modal.show, .price-history-modal.show').forEach(m => m.classList.remove('show'));
+
     if (!authManager.isAuthenticated()) {
         showStatus('addCardStatus', 'Please log in to view price history', 'error');
         return;
