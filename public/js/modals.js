@@ -190,7 +190,6 @@ async function showPriceHistory(cardId, cardName, cardImageUrl, cardDetails, cur
     }
 
     const modal = document.getElementById('priceHistoryModal');
-    const cardImage = document.getElementById('priceHistoryCardImage');
     const cardNameEl = document.getElementById('priceHistoryCardName');
     const cardDetailsEl = document.getElementById('priceHistoryCardDetails');
     const loadingEl = document.getElementById('priceHistoryLoading');
@@ -198,8 +197,6 @@ async function showPriceHistory(cardId, cardName, cardImageUrl, cardDetails, cur
     const chartContainer = document.querySelector('.price-chart-container');
 
     // Set card info
-    cardImage.src = cardImageUrl || '';
-    cardImage.style.display = cardImageUrl ? 'block' : 'none';
     cardNameEl.textContent = cardName;
     cardDetailsEl.textContent = cardDetails;
 

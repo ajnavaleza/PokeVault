@@ -154,15 +154,4 @@
     object-fit: contain;
     display: block;
     margin: 0 auto;
-}
-
-.price-history-card-image {
-    width: 80px;
-    height: 110px;
-    object-fit: contain;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(44,62,80,0.10);
-    margin-right: 18px;
-    background: #f7fafc;
-    display: inline-block;
 } 
